@@ -9,18 +9,49 @@ import (
 	//"bytes"
 )
 
+type user struct {
+	username string
+	password string
+}
+
+type device struct {
+	name string
+	vendor string
+	platform string
+}
+
 func main() {
 
-	username := "admin"
-	password := "Juniper"
-	hostname := "192.168.255.150"
+	u := user{
+		username: "admin",
+		password: "Juniper",
+	}
+
+	ciscoDevice := device{
+		name: "192.168.255.150",
+		vendor: "cisco",
+		platform: "ios",
+	}
+
+	// juniperDevice := device{
+	// 	name: "192.168.255.151",
+	// 	vendor: "juniper",
+	// 	platform: "junios",
+	// }
+// 
+	// aristaDevice := device{
+	// 	name: "192.168.255.152",
+	// 	vendor: "arista",
+	// 	platform: "eos",
+	// }
+
 	port := "22"
 
 	// SSH client config
 	config := &ssh.ClientConfig{
-		User: username,
+		User: u.username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
+			ssh.Password(u.password),
 		},
 		// Non-production only
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
@@ -33,7 +64,9 @@ func main() {
 	// }
 
 	// Connect to host
-	client, err := ssh.Dial("tcp", hostname+":"+port, config)
+	host := fmt.Sprintf("%s:%s", ciscoDevice.name, port)
+
+	client, err := ssh.Dial("tcp", host, config)
 	if err != nil {
 		log.Fatal(err)
 	}

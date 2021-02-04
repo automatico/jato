@@ -1,0 +1,5 @@
+[
+  {"name": "192.168.255.150", "vendor": "cisco", "platform": "ios"},
+  {"name": "192.168.255.151", "vendor": "juniper", "platform": "junos"},
+  {"name": "192.168.255.152", "vendor": "arista", "platform": "eos"}
+]
