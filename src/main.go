@@ -6,6 +6,8 @@ import (
 	"log"
 	"strings"
 	"time"
+	"os"
+	"bufio"
 
 	"golang.org/x/crypto/ssh"
 	// Uncomment to store output in variable
@@ -82,6 +84,7 @@ func readStdBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
 	// 	fmt.Println(line)
 	// }
 	// printResult(lines)
+	writeToFile(lines)
 	
 	fmt.Println()
 	fmt.Println()
@@ -93,12 +96,12 @@ func readStdBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
 
 	// fmt.Println("Here")
 	// fmt.Println(strings.Contains(strings.TrimSpace(lines[len(lines)-1]), "iosv#"))
-	fmt.Println(lines[len(lines)-1])
+	// fmt.Println(lines[len(lines)-1])
 
-	if strings.TrimSpace(lines[len(lines)-1]) != "iosv#e" {
+	if strings.TrimSpace(lines[len(lines)-1]) != "iosv#" {
 		*res = append(*res, lines...)
 		readStdBuf(stdBuf, res, hostname)
-		return res
+		// return res
 	}
 	fmt.Println("end reached")
 	*res = append(*res, lines...)
@@ -161,6 +164,9 @@ func main() {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
+	// Delete temp file
+	deleteFile("temp.txt")
+
 	// Connect to host
 	host := fmt.Sprintf("%s:%s", ciscoDevice.name, port)
 
@@ -178,5 +184,31 @@ func main() {
 func printResult(result []string) {
 	for _, line := range result {
 		fmt.Println(line)
+	}
+}
+
+func writeToFile(lines []string) {
+	file, err := os.OpenFile("temp.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+			log.Fatal(err)
+	}
+	writer := bufio.NewWriter(file)
+	for _, line := range lines {
+			_, err := writer.WriteString(line + "\n")
+			if err != nil {
+					log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
+			}
+			// fmt.Printf("Bytes Written: %d\n", bytesWritten)
+			// fmt.Printf("Available: %d\n", writer.Available())
+			// fmt.Printf("Buffered : %d\n", writer.Buffered())
+	}
+	writer.Flush()
+
+}
+
+func deleteFile(filename string) {
+	err := os.Remove(filename)  // remove a single file
+	if err != nil {
+	  fmt.Println(err)
 	}
 }
