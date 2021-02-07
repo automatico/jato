@@ -8,6 +8,7 @@ import (
 	"time"
 	"os"
 	"bufio"
+	"regexp"
 
 	"golang.org/x/crypto/ssh"
 	// Uncomment to store output in variable
@@ -49,7 +50,7 @@ func executeCmd(hostname string, cmds []string, config *ssh.ClientConfig) *[]str
 	if err != nil {
 		log.Fatalf("request for pseudo terminal failed: %s", err)
 	}
-	stdBuf, err := session.StdoutPipe()
+	stdoutBuf, err := session.StdoutPipe()
 	if err != nil {
 		log.Fatalf("request for stdout pipe failed: %s", err)
 	}
@@ -66,25 +67,22 @@ func executeCmd(hostname string, cmds []string, config *ssh.ClientConfig) *[]str
 		stdinBuf.Write([]byte(cmd + "\n"))
 	}
 	res := make([]string, 0)
-	return readStdBuf(stdBuf, &res, hostname)
+	return readStdoutBuf(stdoutBuf, &res, hostname)
 }
 
-func readStdBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
+func readStdoutBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
 	stdoutBuf := make([]byte, 1000000)
 	time.Sleep(time.Millisecond * 100)
 	byteCount, err := stdBuf.Read(stdoutBuf)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Bytes received: ", byteCount)
+	// fmt.Println("Bytes received: ", byteCount)
 	s := string(stdoutBuf[:byteCount])
 	lines := strings.Split(s, "\n")
 	
-	// for _, line := range lines {
-	// 	fmt.Println(line)
-	// }
-	// printResult(lines)
-	writeToFile(lines)
+	// writeToFile(lines)
+	printResult(lines)
 	
 	fmt.Println()
 	fmt.Println()
@@ -98,9 +96,12 @@ func readStdBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
 	// fmt.Println(strings.Contains(strings.TrimSpace(lines[len(lines)-1]), "iosv#"))
 	// fmt.Println(lines[len(lines)-1])
 
-	if strings.TrimSpace(lines[len(lines)-1]) != "iosv#" {
+	re := regexp.MustCompile(`^.*#$`)
+	if strings.TrimSpace(lines[len(lines)-1]) != re.String() {
+		fmt.Println()
+		fmt.Println(lines[len(lines)-1])
 		*res = append(*res, lines...)
-		readStdBuf(stdBuf, res, hostname)
+		readStdoutBuf(stdBuf, res, hostname)
 		// return res
 	}
 	fmt.Println("end reached")
@@ -198,9 +199,6 @@ func writeToFile(lines []string) {
 			if err != nil {
 					log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
 			}
-			// fmt.Printf("Bytes Written: %d\n", bytesWritten)
-			// fmt.Printf("Available: %d\n", writer.Available())
-			// fmt.Printf("Buffered : %d\n", writer.Buffered())
 	}
 	writer.Flush()
 
