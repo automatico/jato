@@ -8,7 +8,7 @@ import (
 	"time"
 	"os"
 	"bufio"
-	"regexp"
+	// "regexp"
 
 	"golang.org/x/crypto/ssh"
 	// Uncomment to store output in variable
@@ -72,7 +72,7 @@ func executeCmd(hostname string, cmds []string, config *ssh.ClientConfig) *[]str
 
 func readStdoutBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
 	stdoutBuf := make([]byte, 1000000)
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 600)
 	byteCount, err := stdBuf.Read(stdoutBuf)
 	if err != nil {
 		log.Fatal(err)
@@ -82,7 +82,7 @@ func readStdoutBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
 	lines := strings.Split(s, "\n")
 	
 	// writeToFile(lines)
-	printResult(lines)
+	// printResult(lines)
 	
 	fmt.Println()
 	fmt.Println()
@@ -96,10 +96,11 @@ func readStdoutBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
 	// fmt.Println(strings.Contains(strings.TrimSpace(lines[len(lines)-1]), "iosv#"))
 	// fmt.Println(lines[len(lines)-1])
 
-	re := regexp.MustCompile(`^.*#$`)
-	if strings.TrimSpace(lines[len(lines)-1]) != re.String() {
-		fmt.Println()
-		fmt.Println(lines[len(lines)-1])
+	// re := regexp.MustCompile(`^.*#$`)
+	// re.String()
+	if strings.TrimSpace(lines[len(lines)-1]) != "" {
+		// fmt.Println()
+		// fmt.Println(lines[len(lines)-1])
 		*res = append(*res, lines...)
 		readStdoutBuf(stdBuf, res, hostname)
 		// return res
