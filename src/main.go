@@ -180,7 +180,8 @@ func main() {
 	res := <-results
 	outStrings = append(outStrings, *res...)
 
-	printResult(outStrings)
+	// printResult(outStrings)
+	writeToFile(outStrings)
 }
 
 func printResult(result []string) {
