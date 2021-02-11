@@ -83,20 +83,13 @@ func readStdoutBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
 	
 	// writeToFile(lines)
 	// printResult(lines)
-	
-	fmt.Println()
-	fmt.Println()
-	fmt.Println()
-	fmt.Println()
-	fmt.Println()
-	fmt.Println()
-	fmt.Println()
 
 	// fmt.Println("Here")
 	// fmt.Println(strings.Contains(strings.TrimSpace(lines[len(lines)-1]), "iosv#"))
 	// fmt.Println(lines[len(lines)-1])
 
 	// re := regexp.MustCompile(`^.*#$`)
+	// re := regexp.MustCompile(`iosv#`)
 	// re.String()
 	if strings.TrimSpace(lines[len(lines)-1]) != "" {
 		// fmt.Println()
