@@ -7,6 +7,7 @@ import (
     "log"
     "time"
 	"os"
+	"strings"
 
     "golang.org/x/crypto/ssh"
 )
@@ -79,21 +80,24 @@ func main() {
 
     sshconfig := InsecureClientConfig(u.username, u.password)
 
-    results := make(chan []string, 10)
+    results := make(chan map[string][]string)
     timeout := time.After(10 * time.Second)
 
 	for _, device := range devices {
-		go func() {
-			results <- ExecCommands(device["name"], commands["cisco"], sshconfig)
+		go func(device string) {
+			results <- ExecCommands(device, commands["cisco"], sshconfig)
 			// result, _ := ExecCommands(device, listCMDs, sshconfig)
 			// printResult(result)
-		}()
+		}(device["name"])
 	}
     for i := 0; i < len(devices); i++ {
         select {
         case res := <-results:
             // fmt.Print(res)
-			writeToFile(devices[i]["name"], res)
+			for k, v := range res {
+				writeToFile(k, v)
+			}
+			
         case <-timeout:
             fmt.Println("Timed out!")
             return
@@ -103,7 +107,7 @@ func main() {
 
 // ExecCommands ...
 // func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig) ([]string, error) {
-func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig) ([]string) {
+func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig) (map[string][]string) {
 
     // Gets IP, credentials and config/commands, SSH Config (Timeout, Ciphers, ...) and returns
     // output of the device as "string" and an error. If error == nil, means program was able to SSH with no issue
@@ -116,6 +120,7 @@ func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig)
     // Creating Output as String
     var outputStr []string
     var strTmp string
+	delimiter := "-------------------------------"
 
     // Dial to the remote-host
     client, err := ssh.Dial("tcp", ipAddr+":22", sshconfig)
@@ -161,8 +166,13 @@ func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig)
         close(stdinLines)
     }()
 
+
     // Send the commands to the remotehost one by one.
     for i, cmd := range commands {
+
+		command := strings.ReplaceAll(cmd, " ", "-")
+		blah := make(map[string]string)
+
         _, err := stdin.Write([]byte(cmd + "\n"))
         if err != nil {
             log.Fatal(err)
@@ -189,9 +199,11 @@ func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig)
                 break InputLoop
             }
         }
-        outputStr = append(outputStr, strTmp)
+        outputStr = append(outputStr, strTmp, delimiter)
+		blah[command] = strTmp
         //log.Printf("Finished processing %v\n", cmd)
         strTmp = ""
+		fmt.Println(blah)
     }
 
     // Wait for session to finish
@@ -201,7 +213,10 @@ func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig)
     }
 
     // return outputStr, outerr
-    return outputStr
+	result := map[string][]string{
+		ipAddr: outputStr,
+	}
+    return result
 }
 
 // InsecureClientConfig ...
