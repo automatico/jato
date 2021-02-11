@@ -2,7 +2,7 @@ package main
 
 import (
     "bufio"
-    "errors"
+    // "errors"
     "fmt"
     "log"
     "time"
@@ -80,7 +80,7 @@ func main() {
 
     sshconfig := InsecureClientConfig(u.username, u.password)
 
-    results := make(chan map[string][]string)
+    results := make(chan map[string]map[string]string)
     timeout := time.After(10 * time.Second)
 
 	for _, device := range devices {
@@ -94,9 +94,10 @@ func main() {
         select {
         case res := <-results:
             // fmt.Print(res)
-			for k, v := range res {
-				writeToFile(k, v)
-			}
+			// for k, v := range res {
+			// 	writeToFile(k, v)
+			// }
+            printResult(res)
 			
         case <-timeout:
             fmt.Println("Timed out!")
@@ -107,20 +108,21 @@ func main() {
 
 // ExecCommands ...
 // func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig) ([]string, error) {
-func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig) (map[string][]string) {
+func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig) (map[string]map[string]string) {
 
     // Gets IP, credentials and config/commands, SSH Config (Timeout, Ciphers, ...) and returns
     // output of the device as "string" and an error. If error == nil, means program was able to SSH with no issue
 
     // Creating outerr as Output Error.
-    outerr := errors.New("nil")
-    outerr = nil
-	fmt.Println(outerr)
+    // outerr := errors.New("nil")
+    // outerr = nil
+	// fmt.Println(outerr)
 
     // Creating Output as String
     var outputStr []string
     var strTmp string
-	delimiter := "-------------------------------"
+
+    results := make(map[string]string)
 
     // Dial to the remote-host
     client, err := ssh.Dial("tcp", ipAddr+":22", sshconfig)
@@ -166,12 +168,10 @@ func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig)
         close(stdinLines)
     }()
 
-
     // Send the commands to the remotehost one by one.
     for i, cmd := range commands {
 
 		command := strings.ReplaceAll(cmd, " ", "-")
-		blah := make(map[string]string)
 
         _, err := stdin.Write([]byte(cmd + "\n"))
         if err != nil {
@@ -199,13 +199,11 @@ func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig)
                 break InputLoop
             }
         }
-        outputStr = append(outputStr, strTmp, delimiter)
-		blah[command] = strTmp
+        outputStr = append(outputStr, strTmp)
+		results[command] = strTmp
         //log.Printf("Finished processing %v\n", cmd)
         strTmp = ""
-		fmt.Println(blah)
     }
-
     // Wait for session to finish
     err = session.Wait()
     if err != nil {
@@ -213,8 +211,8 @@ func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig)
     }
 
     // return outputStr, outerr
-	result := map[string][]string{
-		ipAddr: outputStr,
+	result := map[string]map[string]string{
+		ipAddr: results,
 	}
     return result
 }
@@ -239,10 +237,10 @@ func InsecureClientConfig(userStr, passStr string) *ssh.ClientConfig {
     return SSHconfig
 }
 
-func printResult(result []string) {
-	for _, item := range result {
-		fmt.Println(item)
-		fmt.Println("-------------------------------")
+func printResult(result map[string]map[string]string) {
+	for k, v := range result {
+		fmt.Println("hostname: " + k)
+		fmt.Println(v)
 	}
 }
 func writeToFile(name string, lines []string) {

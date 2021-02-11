@@ -4,4 +4,4 @@ services:
   app:
     build: .
     volumes:
-      - ./src:/go/gokan/src:cached
+      - ./src:/go/jato/src:cached
