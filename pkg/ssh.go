@@ -256,14 +256,16 @@ func printResult(result map[string]map[string]string) {
 // Write the output from commands run against
 // devices to a plain text file
 func writeToFile(results map[string]map[string]string) {
+	t := time.Now().Unix()
 	for k, v := range results {
-		file, err := os.OpenFile(fmt.Sprintf("%s.txt", k), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		createDeviceDir(k)
+		file, err := os.OpenFile(fmt.Sprintf("%s/%d.raw", k, t), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Fatal(err)
 		}
 		writer := bufio.NewWriter(file)
-		for cmd, output := range v {
-			_, err := writer.WriteString(fmt.Sprintf("command: %s\noutput: \n%s", cmd, output))
+		for _, output := range v {
+			_, err := writer.WriteString(output)
 			if err != nil {
 				log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
 			}
@@ -277,12 +279,7 @@ func writeToFile(results map[string]map[string]string) {
 func writeToJSONFile(results map[string]map[string]string) {
 	t := time.Now().Unix()
 	for k, v := range results {
-		if _, err := os.Stat(fmt.Sprintf("%s", k)); os.IsNotExist(err) {
-			err := os.Mkdir(fmt.Sprintf("%s", k), 0755)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
+		createDeviceDir(k)
 		file, _ := json.MarshalIndent(v, "", " ")
 		_ = ioutil.WriteFile(fmt.Sprintf("%s/%d.json", k, t), file, 0644)
 	}
@@ -293,4 +290,15 @@ func writeToJSONFile(results map[string]map[string]string) {
 func underscorize(s string) string {
 	re := strings.NewReplacer(" ", "_", "-", "_")
 	return re.Replace(s)
+}
+
+// Create device directory if it does not
+// already exist
+func createDeviceDir(s string) {
+	if _, err := os.Stat(s); os.IsNotExist(err) {
+		err := os.Mkdir(s, 0755)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
