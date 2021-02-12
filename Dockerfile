@@ -2,7 +2,7 @@ FROM golang:alpine3.13
 
 WORKDIR /go
 
-COPY ./src ./jato/src
+COPY ./pkg ./jato/pkg
 
 RUN set -ex \
     && apk update \
