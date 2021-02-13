@@ -14,6 +14,11 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// SSHPort ...
+const (
+	SSHPort = 22
+)
+
 // User represents a users credentials
 type User struct {
 	username string
@@ -206,7 +211,7 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
 		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
 	}
-	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", device.Name), sshConfig)
+	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", device.Name, SSHPort), sshConfig)
 	if err != nil {
 		log.Fatalf("Failed to dial: %s", err)
 	}
