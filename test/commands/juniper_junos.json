@@ -1,0 +1,10 @@
+{
+  "commands": [
+    "set cli screen-length 0",
+    "show interfaces terse",
+    "show version",
+    "show lldp neighbors",
+    "show configuration | display set",
+    "exit"
+  ]
+}
