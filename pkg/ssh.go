@@ -44,8 +44,8 @@ func main() {
 	ip := flag.Int("num", 111921, "Mandalorian Episode 4")
 	fmt.Println("Number:", *ip)
 
-	devices := devicesJSONToStruct("test/devices/cisco.json")
-	commands := devicesCommandsToStruct("test/commands/cisco_ios.json")
+	devices := loadDevices("test/devices/cisco.json")
+	commands := loadCommands("test/commands/cisco_ios.json")
 
 	u := user{
 		username: "admin",
@@ -269,7 +269,8 @@ func createDeviceDir(s string) {
 	}
 }
 
-func devicesJSONToStruct(fileName string) Devices {
+// Load a list of devices from a JSON file
+func loadDevices(fileName string) Devices {
 	file, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -291,7 +292,8 @@ func devicesJSONToStruct(fileName string) Devices {
 	return data
 }
 
-func devicesCommandsToStruct(fileName string) Commands {
+// Load a list of commands from a JSON file
+func loadCommands(fileName string) Commands {
 	file, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		log.Fatal(err)
