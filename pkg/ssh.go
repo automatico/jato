@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -37,177 +37,79 @@ type Commands struct {
 	Commands []string `json:"commands"`
 }
 
-// https://stackoverflow.com/a/63759067
-// https://kukuruku.co/post/ssh-commands-execution-on-hundreds-of-servers-via-go/
-// https://zaiste.net/posts/executing-commands-via-ssh-using-go/
-func main() {
-	ip := flag.Int("num", 111921, "Mandalorian Episode 4")
-	fmt.Println("Number:", *ip)
-
-	devices := loadDevices("test/devices/cisco.json")
-	commands := loadCommands("test/commands/cisco_ios.json")
-
-	u := user{
-		username: "admin",
-		password: "Juniper",
+// Expect like interface
+func expecter(cmd string, expect string, timeout int, sshIn io.WriteCloser, sshOut io.Reader) string {
+	if _, err := writeBuff(cmd, sshIn); err != nil {
+		handleError(err, true, "Failed to run: %s")
 	}
+	result := readBuff(expect, sshOut, timeout)
 
-	sshconfig := InsecureClientConfig(u.username, u.password)
-
-	results := make(chan map[string]map[string]string)
-	timeout := time.After(10 * time.Second)
-
-	for _, device := range devices.Device {
-		go func(device string, commands Commands) {
-			results <- ExecCommands(device, commands, sshconfig)
-			// result, _ := ExecCommands(device, listCMDs, sshconfig)
-			// printResult(result)
-		}(device.Name, commands)
-	}
-	for i := 0; i < len(devices.Device); i++ {
-		select {
-		case res := <-results:
-
-			writeToJSONFile(res)
-			// writeToFile(res)
-			// printResult(res)
-
-		case <-timeout:
-			fmt.Println("Timed out!")
-			return
-		}
-	}
-}
-
-// ExecCommands ...
-// func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig) ([]string, error) {
-func ExecCommands(ipAddr string, c Commands, sshconfig *ssh.ClientConfig) map[string]map[string]string {
-
-	// Gets IP, credentials and config/commands, SSH Config (Timeout, Ciphers, ...) and returns
-	// output of the device as "string" and an error. If error == nil, means program was able to SSH with no issue
-
-	// Creating outerr as Output Error.
-	// outerr := errors.New("nil")
-	// outerr = nil
-	// fmt.Println(outerr)
-
-	// Creating Output as String
-	var outputStr []string
-	var strTmp string
-
-	results := make(map[string]string)
-
-	// Dial to the remote-host
-	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", ipAddr), sshconfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer client.Close()
-
-	// Create sesssion
-	session, err := client.NewSession()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer session.Close()
-
-	// StdinPipe() returns a pipe that will be connected to the remote command's standard input when the command starts.
-	// StdoutPipe() returns a pipe that will be connected to the remote command's standard output when the command starts.
-	stdin, err := session.StdinPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	stdout, err := session.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Start remote shell
-	err = session.Shell()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	stdinLines := make(chan string)
-	go func() {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			stdinLines <- scanner.Text()
-		}
-		if err := scanner.Err(); err != nil {
-			log.Printf("scanner failed: %v", err)
-		}
-		close(stdinLines)
-	}()
-
-	// Send the commands to the remotehost one by one.
-	for i, cmd := range c.Commands {
-
-		command := underscorize(cmd)
-
-		_, err := stdin.Write([]byte(fmt.Sprintf("%s\n", cmd)))
-		if err != nil {
-			log.Fatal(err)
-		}
-		if i == len(c.Commands)-1 {
-			_ = stdin.Close() // send eof
-		}
-
-		// wait for command to complete
-		// we'll assume the moment we've gone 1 secs w/o any output that our command is done
-		timer := time.NewTimer(0)
-	InputLoop:
-		for {
-			timer.Reset(time.Millisecond * 1000)
-			select {
-			case line, ok := <-stdinLines:
-				if !ok {
-					log.Println("Finished processing")
-					break InputLoop
-				}
-				strTmp += line
-				strTmp += "\n"
-			case <-timer.C:
-				break InputLoop
-			}
-		}
-		outputStr = append(outputStr, strTmp)
-		results[command] = strTmp
-		//log.Printf("Finished processing %v\n", cmd)
-		strTmp = ""
-	}
-	// Wait for session to finish
-	err = session.Wait()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// return outputStr, outerr
-	result := map[string]map[string]string{
-		ipAddr: results,
-	}
 	return result
 }
 
-// InsecureClientConfig ...
-func InsecureClientConfig(userStr, passStr string) *ssh.ClientConfig {
-
-	SSHconfig := &ssh.ClientConfig{
-		User:    userStr,
-		Timeout: 5 * time.Second,
-		Auth:    []ssh.AuthMethod{ssh.Password(passStr)},
-
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		// Config: ssh.Config{
-		//     Ciphers: []string{"aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-cbc", "aes192-cbc",
-		//         "aes256-cbc", "3des-cbc", "des-cbc"},
-		//     KeyExchanges: []string{"diffie-hellman-group1-sha1",
-		//         "diffie-hellman-group-exchange-sha1",
-		//         "diffie-hellman-group14-sha1"},
-		// },
+func readBuffForString(whattoexpect string, sshOut io.Reader, buffRead chan<- string) {
+	buf := make([]byte, 1024)
+	n, err := sshOut.Read(buf) //this reads the ssh terminal
+	waitingString := ""
+	if err == nil {
+		waitingString = string(buf[:n])
 	}
-	return SSHconfig
+	for (err == nil) && (!strings.Contains(waitingString, whattoexpect)) {
+		n, err = sshOut.Read(buf)
+		waitingString += string(buf[:n])
+		// fmt.Println(waitingString) //uncommenting this might help you debug if you are coming into errors with timeouts when correct details entered
+
+	}
+	buffRead <- waitingString
+}
+func readBuff(whattoexpect string, sshOut io.Reader, timeoutSeconds int) string {
+	ch := make(chan string)
+	go func(whattoexpect string, sshOut io.Reader) {
+		buffRead := make(chan string)
+		go readBuffForString(whattoexpect, sshOut, buffRead)
+		select {
+		case ret := <-buffRead:
+			ch <- ret
+		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
+			handleError(fmt.Errorf("%d", timeoutSeconds), true, fmt.Sprintf("Waiting for '%s' took longer than timeout: %d", whattoexpect, timeoutSeconds))
+		}
+	}(whattoexpect, sshOut)
+	return <-ch
+}
+func writeBuff(command string, sshIn io.WriteCloser) (int, error) {
+	returnCode, err := sshIn.Write([]byte(command + "\r"))
+	return returnCode, err
+}
+func handleError(e error, fatal bool, customMessage ...string) {
+	var errorMessage string
+	if e != nil {
+		if len(customMessage) > 0 {
+			errorMessage = strings.Join(customMessage, " ")
+		} else {
+			errorMessage = "%s"
+		}
+		if fatal == true {
+			log.Fatalf(errorMessage, e)
+		} else {
+			log.Print(errorMessage, e)
+		}
+	}
+}
+
+func loadCommands(fileName string) Commands {
+	file, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data := Commands{}
+
+	err = json.Unmarshal([]byte(file), &data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return data
 }
 
 // Print the output from commands run against
@@ -283,32 +185,80 @@ func loadDevices(fileName string) Devices {
 		log.Fatal(err)
 	}
 
-	for _, dev := range data.Device {
-		fmt.Println("Name: ", dev.Name)
-		fmt.Println("Vendor: ", dev.Vendor)
-		fmt.Println("Platform: ", dev.Platform)
-		fmt.Println("Connector: ", dev.Connector)
-	}
 	return data
 }
 
-// Load a list of commands from a JSON file
-func loadCommands(fileName string) Commands {
-	file, err := ioutil.ReadFile(fileName)
+func runner(device Device, commands Commands) map[string]map[string]string {
+
+	results := make(map[string]string)
+
+	sshConfig := &ssh.ClientConfig{
+		User: "admin",
+		Auth: []ssh.AuthMethod{
+			ssh.Password("Juniper"),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	sshConfig.Config.Ciphers = append(sshConfig.Config.Ciphers, "aes128-cbc")
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,     // disable echoing
+		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
+		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+	}
+	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", device.Name), sshConfig)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to dial: %s", err)
+	}
+	session, err := connection.NewSession()
+	handleError(err, true, "Failed to create session: %s")
+	sshOut, err := session.StdoutPipe()
+	handleError(err, true, "Unable to setup stdin for session: %v")
+	sshIn, err := session.StdinPipe()
+	handleError(err, true, "Unable to setup stdout for session: %v")
+	if err := session.RequestPty("xterm", 0, 200, modes); err != nil {
+		session.Close()
+		handleError(err, true, "request for pseudo terminal failed: %s")
 	}
 
-	data := Commands{}
+	if err := session.Shell(); err != nil {
+		session.Close()
+		handleError(err, true, "request for shell failed: %s")
+	}
+	readBuff("#", sshOut, 2)
 
-	err = json.Unmarshal([]byte(file), &data)
-	if err != nil {
-		log.Fatal(err)
+	for _, cmd := range commands.Commands {
+
+		results[underscorize(cmd)] = expecter(cmd, "#", 5, sshIn, sshOut)
+	}
+	session.Close()
+	res := map[string]map[string]string{
+		device.Name: results,
+	}
+	return res
+}
+
+func main() {
+
+	commands := loadCommands("test/commands/cisco_ios.json")
+	devices := loadDevices("test/devices/cisco.json")
+
+	results := make(chan map[string]map[string]string)
+	timeout := time.After(10 * time.Second)
+
+	for _, device := range devices.Device {
+		go func(device Device, commands Commands) {
+			results <- runner(device, commands)
+		}(device, commands)
 	}
 
-	for _, cmd := range data.Commands {
-		fmt.Println("Command: ", cmd)
+	for i := 0; i < len(devices.Device); i++ {
+		select {
+		case res := <-results:
+			writeToJSONFile(res)
+		case <-timeout:
+			fmt.Println("Timed out!")
+			return
+		}
 	}
 
-	return data
 }
