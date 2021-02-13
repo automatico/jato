@@ -251,7 +251,7 @@ func main() {
 		}(device, commands)
 	}
 
-	for i := 0; i < len(devices.Device); i++ {
+	for range devices.Device {
 		select {
 		case res := <-results:
 			writeToJSONFile(res)
