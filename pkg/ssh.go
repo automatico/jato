@@ -14,7 +14,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type user struct {
+// User represents a users credentials
+type User struct {
 	username string
 	password string
 }
@@ -188,14 +189,14 @@ func loadDevices(fileName string) Devices {
 	return data
 }
 
-func runner(device Device, commands Commands) map[string]map[string]string {
+func runner(user User, device Device, commands Commands) map[string]map[string]string {
 
 	results := make(map[string]string)
 
 	sshConfig := &ssh.ClientConfig{
-		User: "admin",
+		User: user.username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password("Juniper"),
+			ssh.Password(user.password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
@@ -239,6 +240,10 @@ func runner(device Device, commands Commands) map[string]map[string]string {
 
 func main() {
 
+	user := User{
+		username: "admin",
+		password: "Juniper",
+	}
 	commands := loadCommands("test/commands/cisco_ios.json")
 	devices := loadDevices("test/devices/cisco.json")
 
@@ -246,9 +251,9 @@ func main() {
 	timeout := time.After(10 * time.Second)
 
 	for _, device := range devices.Device {
-		go func(device Device, commands Commands) {
-			results <- runner(device, commands)
-		}(device, commands)
+		go func(user User, device Device, commands Commands) {
+			results <- runner(user, device, commands)
+		}(user, device, commands)
 	}
 
 	for range devices.Device {
