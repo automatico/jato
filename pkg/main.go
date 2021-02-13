@@ -1,13 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 	"time"
-	"os"
-	"bufio"
+
 	// "regexp"
 
 	"golang.org/x/crypto/ssh"
@@ -21,8 +22,8 @@ type user struct {
 }
 
 type device struct {
-	name string
-	vendor string
+	name     string
+	vendor   string
 	platform string
 }
 
@@ -80,7 +81,7 @@ func readStdoutBuf(stdBuf io.Reader, res *[]string, hostname string) *[]string {
 	// fmt.Println("Bytes received: ", byteCount)
 	s := string(stdoutBuf[:byteCount])
 	lines := strings.Split(s, "\n")
-	
+
 	// writeToFile(lines)
 	// printResult(lines)
 
@@ -128,8 +129,8 @@ func main() {
 	}
 
 	ciscoDevice := device{
-		name: "192.168.255.150",
-		vendor: "cisco",
+		name:     "192.168.255.150",
+		vendor:   "cisco",
 		platform: "ios",
 	}
 
@@ -140,7 +141,7 @@ func main() {
 	// 	vendor: "juniper",
 	// 	platform: "junios",
 	// }
-// 
+	//
 	// aristaDevice := device{
 	// 	name: "192.168.255.152",
 	// 	vendor: "arista",
@@ -186,22 +187,22 @@ func printResult(result []string) {
 func writeToFile(lines []string) {
 	file, err := os.OpenFile("temp.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-			log.Fatal(err)
+		log.Fatal(err)
 	}
 	writer := bufio.NewWriter(file)
 	for _, line := range lines {
-			_, err := writer.WriteString(line + "\n")
-			if err != nil {
-					log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
-			}
+		_, err := writer.WriteString(line + "\n")
+		if err != nil {
+			log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
+		}
 	}
 	writer.Flush()
 
 }
 
 func deleteFile(filename string) {
-	err := os.Remove(filename)  // remove a single file
+	err := os.Remove(filename) // remove a single file
 	if err != nil {
-	  fmt.Println(err)
+		fmt.Println(err)
 	}
 }
