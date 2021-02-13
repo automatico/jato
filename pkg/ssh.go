@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,72 +19,37 @@ type user struct {
 	password string
 }
 
-type device struct {
-	name     string
-	vendor   string
-	platform string
+// Device represents a managed device
+type Device struct {
+	Name      string `json:"name"`
+	Vendor    string `json:"vendor"`
+	Platform  string `json:"platform"`
+	Connector string `json:"connector"`
 }
 
-type commands struct {
-	driver   string
-	commands []string
+// Devices holds a collection of Device structs
+type Devices struct {
+	Device []Device `json:"devices"`
+}
+
+// Commands to run against a device
+type Commands struct {
+	Commands []string `json:"commands"`
 }
 
 // https://stackoverflow.com/a/63759067
 // https://kukuruku.co/post/ssh-commands-execution-on-hundreds-of-servers-via-go/
 // https://zaiste.net/posts/executing-commands-via-ssh-using-go/
 func main() {
+	ip := flag.Int("num", 111921, "Mandalorian Episode 4")
+	fmt.Println("Number:", *ip)
 
-	commands := map[string][]string{
-		"cisco": {
-			"terminal length 0",
-			"show version",
-			"show ip interface brief",
-			"show ip arp",
-			"show cdp neighbors",
-			"show running-config",
-			"exit",
-		},
-		"juniper": {
-			"set cli screen-length 0",
-			"show interfaces terse",
-			"show version",
-			"show lldp neighbors",
-			"exit",
-		},
-	}
+	devices := devicesJSONToStruct("test/devices/cisco.json")
+	commands := devicesCommandsToStruct("test/commands/cisco_ios.json")
 
 	u := user{
 		username: "admin",
 		password: "Juniper",
-	}
-
-	devices := []map[string]string{
-		{
-			"name":     "192.168.255.150",
-			"vendor":   "cisco",
-			"platform": "ios",
-		},
-		{
-			"name":     "192.168.255.154",
-			"vendor":   "cisco",
-			"platform": "ios",
-		},
-		{
-			"name":     "192.168.255.155",
-			"vendor":   "cisco",
-			"platform": "ios",
-		},
-		{
-			"name":     "192.168.255.156",
-			"vendor":   "cisco",
-			"platform": "ios",
-		},
-		{
-			"name":     "192.168.255.157",
-			"vendor":   "cisco",
-			"platform": "ios",
-		},
 	}
 
 	sshconfig := InsecureClientConfig(u.username, u.password)
@@ -91,14 +57,14 @@ func main() {
 	results := make(chan map[string]map[string]string)
 	timeout := time.After(10 * time.Second)
 
-	for _, device := range devices {
-		go func(device string) {
-			results <- ExecCommands(device, commands["cisco"], sshconfig)
+	for _, device := range devices.Device {
+		go func(device string, commands Commands) {
+			results <- ExecCommands(device, commands, sshconfig)
 			// result, _ := ExecCommands(device, listCMDs, sshconfig)
 			// printResult(result)
-		}(device["name"])
+		}(device.Name, commands)
 	}
-	for i := 0; i < len(devices); i++ {
+	for i := 0; i < len(devices.Device); i++ {
 		select {
 		case res := <-results:
 
@@ -115,7 +81,7 @@ func main() {
 
 // ExecCommands ...
 // func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig) ([]string, error) {
-func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig) map[string]map[string]string {
+func ExecCommands(ipAddr string, c Commands, sshconfig *ssh.ClientConfig) map[string]map[string]string {
 
 	// Gets IP, credentials and config/commands, SSH Config (Timeout, Ciphers, ...) and returns
 	// output of the device as "string" and an error. If error == nil, means program was able to SSH with no issue
@@ -176,7 +142,7 @@ func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig)
 	}()
 
 	// Send the commands to the remotehost one by one.
-	for i, cmd := range commands {
+	for i, cmd := range c.Commands {
 
 		command := underscorize(cmd)
 
@@ -184,7 +150,7 @@ func ExecCommands(ipAddr string, commands []string, sshconfig *ssh.ClientConfig)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if i == len(commands)-1 {
+		if i == len(c.Commands)-1 {
 			_ = stdin.Close() // send eof
 		}
 
@@ -301,4 +267,46 @@ func createDeviceDir(s string) {
 			log.Fatal(err)
 		}
 	}
+}
+
+func devicesJSONToStruct(fileName string) Devices {
+	file, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data := Devices{}
+
+	err = json.Unmarshal([]byte(file), &data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, dev := range data.Device {
+		fmt.Println("Name: ", dev.Name)
+		fmt.Println("Vendor: ", dev.Vendor)
+		fmt.Println("Platform: ", dev.Platform)
+		fmt.Println("Connector: ", dev.Connector)
+	}
+	return data
+}
+
+func devicesCommandsToStruct(fileName string) Commands {
+	file, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data := Commands{}
+
+	err = json.Unmarshal([]byte(file), &data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, cmd := range data.Commands {
+		fmt.Println("Command: ", cmd)
+	}
+
+	return data
 }

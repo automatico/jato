@@ -1,0 +1,11 @@
+{
+  "commands": [
+    "terminal length 0",
+    "show version",
+    "show ip interface brief",
+    "show ip arp",
+    "show cdp neighbors",
+    "show running-config",
+    "exit"
+  ]
+}

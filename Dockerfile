@@ -3,6 +3,7 @@ FROM golang:alpine3.13
 WORKDIR /go
 
 COPY ./pkg ./jato/pkg
+COPY ./test ./jato/test
 
 RUN set -ex \
     && apk update \

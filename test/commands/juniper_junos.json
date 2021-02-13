@@ -1,12 +1,5 @@
 {
-  "cisco-ios": [
-    "term len 0",
-    "show ip int brie",
-    "show version",
-    "show run",
-    "exit"
-  ],
-  "juniper-junos": [
+  "commands": [
     "set cli screen-length 0",
     "show interfaces terse",
     "show version",

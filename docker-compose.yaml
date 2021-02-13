@@ -5,3 +5,4 @@ services:
     build: .
     volumes:
       - ./pkg:/go/jato/pkg:cached
+      - ./test:/go/jato/test:cached

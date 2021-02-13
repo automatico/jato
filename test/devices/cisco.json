@@ -1,0 +1,9 @@
+{
+  "devices": [
+    {"name": "192.168.255.150", "vendor": "cisco", "platform": "ios"},
+    {"name": "192.168.255.154", "vendor": "cisco", "platform": "ios"},
+    {"name": "192.168.255.155", "vendor": "cisco", "platform": "ios"},
+    {"name": "192.168.255.156", "vendor": "cisco", "platform": "ios"},
+    {"name": "192.168.255.157", "vendor": "cisco", "platform": "ios"}
+  ]
+}
