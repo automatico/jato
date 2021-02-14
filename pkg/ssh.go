@@ -27,6 +27,7 @@ type User struct {
 
 // Device represents a managed device
 type Device struct {
+	IP        string `json:"ip"`
 	Name      string `json:"name"`
 	Vendor    string `json:"vendor"`
 	Platform  string `json:"platform"`
@@ -215,7 +216,7 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
 		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
 	}
-	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", device.Name, SSHPort), sshConfig)
+	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", device.IP, SSHPort), sshConfig)
 	if err != nil {
 		log.Fatalf("Failed to dial: %s", err)
 	}

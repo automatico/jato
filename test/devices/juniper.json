@@ -1,5 +1,5 @@
 {
   "devices": [
-    {"name": "192.168.255.151", "vendor": "juniper", "platform": "junos"}
+    {"name": "vmx-1", "ip": "192.168.255.151", "vendor": "juniper", "platform": "junos", "connector": "ssh"}
   ]
 }
