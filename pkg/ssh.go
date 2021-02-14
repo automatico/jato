@@ -129,11 +129,11 @@ func printResult(result map[string]map[string]string) {
 
 // Write the output from commands run against
 // devices to a plain text file
-func writeToFile(results map[string]map[string]string) {
-	t := time.Now().Unix()
+func writeToFile(timestamp int64, results map[string]map[string]string) {
+	outdir := "data"
 	for k, v := range results {
-		createDeviceDir(k)
-		file, err := os.OpenFile(fmt.Sprintf("%s/%d.raw", k, t), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		createDeviceDir(fmt.Sprintf("%s/%s", outdir, k))
+		file, err := os.OpenFile(fmt.Sprintf("%s/%s/%d.raw", outdir, k, timestamp), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -150,12 +150,13 @@ func writeToFile(results map[string]map[string]string) {
 
 // Write the output from commands run against
 // devices to a json file
-func writeToJSONFile(results map[string]map[string]string) {
-	t := time.Now().Unix()
+func writeToJSONFile(timestamp int64, results map[string]map[string]string) {
+	outdir := "data"
 	for k, v := range results {
-		createDeviceDir(k)
+		createDeviceDir(fmt.Sprintf("%s/%s", outdir, k))
 		file, _ := json.MarshalIndent(v, "", " ")
-		_ = ioutil.WriteFile(fmt.Sprintf("%s/%d.json", k, t), file, 0644)
+		_ = ioutil.WriteFile(fmt.Sprintf("%s/%s/%d.json", outdir, k, timestamp), file, 0644)
+		fmt.Printf("Successfully captured: %s\n", k)
 	}
 }
 
@@ -170,7 +171,7 @@ func underscorize(s string) string {
 // already exist
 func createDeviceDir(s string) {
 	if _, err := os.Stat(s); os.IsNotExist(err) {
-		err := os.Mkdir(s, 0755)
+		err := os.MkdirAll(s, 0755)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -245,12 +246,13 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 
 func main() {
 
+	t := time.Now().Unix()
 	user := User{
-		username: "admin",
-		password: "Juniper",
+		username: os.Getenv("JATO_SSH_USER"),
+		password: os.Getenv("JATO_SSH_PASS"),
 	}
-	commands := loadCommands("test/commands/cisco_ios.json")
-	devices := loadDevices("test/devices/cisco.json")
+	commands := loadCommands("commands.json")
+	devices := loadDevices("devices.json")
 
 	results := make(chan map[string]map[string]string)
 	timeout := time.After(10 * time.Second)
@@ -264,7 +266,8 @@ func main() {
 	for range devices.Device {
 		select {
 		case res := <-results:
-			writeToJSONFile(res)
+			writeToJSONFile(t, res)
+			writeToFile(t, res)
 		case <-timeout:
 			fmt.Println("Timed out!")
 			return

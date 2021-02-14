@@ -6,3 +6,6 @@ services:
     volumes:
       - ./pkg:/go/jato/pkg:cached
       - ./test:/go/jato/test:cached
+    environment: 
+      - "JATO_SSH_USER=${JATO_SSH_USER}"
+      - "JATO_SSH_PASS=${JATO_SSH_PASS}"
