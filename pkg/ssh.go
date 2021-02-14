@@ -145,6 +145,7 @@ func writeToFile(timestamp int64, results map[string]map[string]string) {
 			}
 		}
 		writer.Flush()
+		fmt.Printf("Saved RAW output: %s\n", k)
 	}
 }
 
@@ -156,7 +157,7 @@ func writeToJSONFile(timestamp int64, results map[string]map[string]string) {
 		createDeviceDir(fmt.Sprintf("%s/%s", outdir, k))
 		file, _ := json.MarshalIndent(v, "", " ")
 		_ = ioutil.WriteFile(fmt.Sprintf("%s/%s/%d.json", outdir, k, timestamp), file, 0644)
-		fmt.Printf("Successfully captured: %s\n", k)
+		fmt.Printf("Saved JSON output: %s\n", k)
 	}
 }
 
