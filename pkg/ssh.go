@@ -205,9 +205,11 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 		Auth: []ssh.AuthMethod{
 			ssh.Password(user.password),
 		},
+		// Make this an option
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	sshConfig.Config.Ciphers = append(sshConfig.Config.Ciphers, "aes128-cbc")
+	// Make this an option
+	sshConfig.Config.Ciphers = append(sshConfig.Config.Ciphers, "aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-cbc", "aes192-cbc", "aes256-cbc", "3des-cbc", "des-cbc")
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,     // disable echoing
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
