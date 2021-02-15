@@ -36,7 +36,7 @@ type Device struct {
 
 // Devices holds a collection of Device structs
 type Devices struct {
-	Device []Device `json:"devices"`
+	Devices []Device `json:"devices"`
 }
 
 // Commands to run against a device
@@ -248,9 +248,10 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 	return res
 }
 
+// SSH is the entrypoint to the SSH to a device.
 func SSH() {
 
-	t := time.Now().Unix()
+	timeNow := time.Now().Unix()
 	user := User{
 		username: os.Getenv("JATO_SSH_USER"),
 		password: os.Getenv("JATO_SSH_PASS"),
@@ -261,17 +262,17 @@ func SSH() {
 	results := make(chan map[string]map[string]string)
 	timeout := time.After(10 * time.Second)
 
-	for _, device := range devices.Device {
-		go func(user User, device Device, commands Commands) {
-			results <- runner(user, device, commands)
+	for _, device := range devices.Devices {
+		go func(u User, d Device, c Commands) {
+			results <- runner(u, d, c)
 		}(user, device, commands)
 	}
 
-	for range devices.Device {
+	for range devices.Devices {
 		select {
-		case res := <-results:
-			writeToJSONFile(t, res)
-			writeToFile(t, res)
+		case result := <-results:
+			writeToJSONFile(timeNow, result)
+			writeToFile(timeNow, result)
 		case <-timeout:
 			fmt.Println("Timed out!")
 			return
