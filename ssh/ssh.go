@@ -11,6 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/automatico/jato/command"
+	"github.com/automatico/jato/device"
+	"github.com/automatico/jato/user"
+	"github.com/automatico/jato/utils"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -18,31 +22,6 @@ import (
 const (
 	SSHPort = 22
 )
-
-// User represents a users credentials
-type User struct {
-	username string
-	password string
-}
-
-// Device represents a managed device
-type Device struct {
-	IP        string `json:"ip"`
-	Name      string `json:"name"`
-	Vendor    string `json:"vendor"`
-	Platform  string `json:"platform"`
-	Connector string `json:"connector"`
-}
-
-// Devices holds a collection of Device structs
-type Devices struct {
-	Devices []Device `json:"devices"`
-}
-
-// Commands to run against a device
-type Commands struct {
-	Commands []string `json:"commands"`
-}
 
 // Expect like interface
 func expecter(cmd string, expect string, timeout int, sshIn io.WriteCloser, sshOut io.Reader) string {
@@ -103,22 +82,6 @@ func handleError(e error, fatal bool, customMessage ...string) {
 	}
 }
 
-func loadCommands(fileName string) Commands {
-	file, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	data := Commands{}
-
-	err = json.Unmarshal([]byte(file), &data)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return data
-}
-
 // Print the output from commands run against
 // devices to stdout
 func printResult(result map[string]map[string]string) {
@@ -162,13 +125,6 @@ func writeToJSONFile(timestamp int64, results map[string]map[string]string) {
 	}
 }
 
-// Converts a string to an underscore string
-// replacing spaces and dashes with underscores
-func underscorer(s string) string {
-	re := strings.NewReplacer(" ", "_", "-", "_")
-	return re.Replace(s)
-}
-
 // Create device directory if it does not
 // already exist
 func createDeviceDir(s string) {
@@ -180,31 +136,14 @@ func createDeviceDir(s string) {
 	}
 }
 
-// Load a list of devices from a JSON file
-func loadDevices(fileName string) Devices {
-	file, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	data := Devices{}
-
-	err = json.Unmarshal([]byte(file), &data)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return data
-}
-
-func runner(user User, device Device, commands Commands) map[string]map[string]string {
+func runner(u user.User, device device.Device, commands command.Commands) map[string]map[string]string {
 
 	results := make(map[string]string)
 
 	sshConfig := &ssh.ClientConfig{
-		User: user.username,
+		User: u.Username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(user.password),
+			ssh.Password(u.Password),
 		},
 		// Make this an option
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
@@ -238,8 +177,7 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 	readBuff("#", sshOut, 2)
 
 	for _, cmd := range commands.Commands {
-
-		results[underscorer(cmd)] = expecter(cmd, "#", 5, sshIn, sshOut)
+		results[utils.Underscorer(cmd)] = expecter(cmd, "#", 5, sshIn, sshOut)
 	}
 	session.Close()
 	res := map[string]map[string]string{
@@ -252,23 +190,23 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 func SSH() {
 
 	timeNow := time.Now().Unix()
-	user := User{
-		username: os.Getenv("JATO_SSH_USER"),
-		password: os.Getenv("JATO_SSH_PASS"),
+	usr := user.User{
+		Username: os.Getenv("JATO_SSH_USER"),
+		Password: os.Getenv("JATO_SSH_PASS"),
 	}
-	commands := loadCommands("commands.json")
-	devices := loadDevices("devices.json")
+	cmds := command.LoadCommands("commands.json")
+	devs := device.LoadDevices("devices.json")
 
 	results := make(chan map[string]map[string]string)
 	timeout := time.After(10 * time.Second)
 
-	for _, device := range devices.Devices {
-		go func(u User, d Device, c Commands) {
+	for _, dev := range devs.Devices {
+		go func(u user.User, d device.Device, c command.Commands) {
 			results <- runner(u, d, c)
-		}(user, device, commands)
+		}(usr, dev, cmds)
 	}
 
-	for range devices.Devices {
+	for range devs.Devices {
 		select {
 		case result := <-results:
 			writeToJSONFile(timeNow, result)
