@@ -1,4 +1,4 @@
-package main
+package telnet
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 )
 
 // https://stackoverflow.com/questions/24339660/read-whole-data-with-golang-net-conn-read
-func main() {
+func telnet() {
 	commands := []string{
 		"\n",
 		"terminal length 0",
