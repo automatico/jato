@@ -190,10 +190,7 @@ func runner(u user.User, device device.Device, commands command.Commands) map[st
 func SSH() {
 
 	timeNow := time.Now().Unix()
-	usr := user.User{
-		Username: os.Getenv("JATO_SSH_USER"),
-		Password: os.Getenv("JATO_SSH_PASS"),
-	}
+	usr := user.LoadUser()
 	cmds := command.LoadCommands("commands.json")
 	devs := device.LoadDevices("devices.json")
 
