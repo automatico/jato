@@ -1,4 +1,4 @@
-package main
+package ssh
 
 import (
 	"bufio"
@@ -27,6 +27,7 @@ type User struct {
 
 // Device represents a managed device
 type Device struct {
+	IP        string `json:"ip"`
 	Name      string `json:"name"`
 	Vendor    string `json:"vendor"`
 	Platform  string `json:"platform"`
@@ -53,33 +54,33 @@ func expecter(cmd string, expect string, timeout int, sshIn io.WriteCloser, sshO
 	return result
 }
 
-func readBuffForString(whattoexpect string, sshOut io.Reader, buffRead chan<- string) {
+func readBuffForString(expect string, sshOut io.Reader, buffRead chan<- string) {
 	buf := make([]byte, 1024)
 	n, err := sshOut.Read(buf) //this reads the ssh terminal
-	waitingString := ""
+	tmpStr := ""
 	if err == nil {
-		waitingString = string(buf[:n])
+		tmpStr = string(buf[:n])
 	}
-	for (err == nil) && (!strings.Contains(waitingString, whattoexpect)) {
+	for (err == nil) && (!strings.Contains(tmpStr, expect)) {
 		n, err = sshOut.Read(buf)
-		waitingString += string(buf[:n])
-		// fmt.Println(waitingString) //uncommenting this might help you debug if you are coming into errors with timeouts when correct details entered
+		tmpStr += string(buf[:n])
+		// fmt.Println(tmpStr) //uncommenting this might help you debug if you are coming into errors with timeouts when correct details entered
 
 	}
-	buffRead <- waitingString
+	buffRead <- tmpStr
 }
-func readBuff(whattoexpect string, sshOut io.Reader, timeoutSeconds int) string {
+func readBuff(expect string, sshOut io.Reader, timeout int) string {
 	ch := make(chan string)
-	go func(whattoexpect string, sshOut io.Reader) {
+	go func(expect string, sshOut io.Reader) {
 		buffRead := make(chan string)
-		go readBuffForString(whattoexpect, sshOut, buffRead)
+		go readBuffForString(expect, sshOut, buffRead)
 		select {
 		case ret := <-buffRead:
 			ch <- ret
-		case <-time.After(time.Duration(timeoutSeconds) * time.Second):
-			handleError(fmt.Errorf("%d", timeoutSeconds), true, fmt.Sprintf("Waiting for '%s' took longer than timeout: %d", whattoexpect, timeoutSeconds))
+		case <-time.After(time.Duration(timeout) * time.Second):
+			handleError(fmt.Errorf("%d", timeout), true, fmt.Sprintf("Waiting for '%s' took longer than timeout: %d", expect, timeout))
 		}
-	}(whattoexpect, sshOut)
+	}(expect, sshOut)
 	return <-ch
 }
 func writeBuff(command string, sshIn io.WriteCloser) (int, error) {
@@ -163,7 +164,7 @@ func writeToJSONFile(timestamp int64, results map[string]map[string]string) {
 
 // Converts a string to an underscore string
 // replacing spaces and dashes with underscores
-func underscorize(s string) string {
+func underscorer(s string) string {
 	re := strings.NewReplacer(" ", "_", "-", "_")
 	return re.Replace(s)
 }
@@ -205,15 +206,17 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 		Auth: []ssh.AuthMethod{
 			ssh.Password(user.password),
 		},
+		// Make this an option
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	sshConfig.Config.Ciphers = append(sshConfig.Config.Ciphers, "aes128-cbc")
+	// Make this an option
+	sshConfig.Config.Ciphers = append(sshConfig.Config.Ciphers, "aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-cbc", "aes192-cbc", "aes256-cbc", "3des-cbc", "des-cbc")
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,     // disable echoing
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
 		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
 	}
-	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", device.Name, SSHPort), sshConfig)
+	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", device.IP, SSHPort), sshConfig)
 	if err != nil {
 		log.Fatalf("Failed to dial: %s", err)
 	}
@@ -236,7 +239,7 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 
 	for _, cmd := range commands.Commands {
 
-		results[underscorize(cmd)] = expecter(cmd, "#", 5, sshIn, sshOut)
+		results[underscorer(cmd)] = expecter(cmd, "#", 5, sshIn, sshOut)
 	}
 	session.Close()
 	res := map[string]map[string]string{
@@ -245,7 +248,7 @@ func runner(user User, device Device, commands Commands) map[string]map[string]s
 	return res
 }
 
-func main() {
+func SSH() {
 
 	t := time.Now().Unix()
 	user := User{
