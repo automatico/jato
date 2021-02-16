@@ -7,6 +7,6 @@ import (
 
 func main() {
 
-	//ssh.SSH()
 	cli.CLI()
+	//ssh.SSH()
 }
