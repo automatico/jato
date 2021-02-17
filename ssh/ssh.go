@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/automatico/jato/cli"
 	"github.com/automatico/jato/command"
 	"github.com/automatico/jato/device"
 	"github.com/automatico/jato/user"
@@ -187,12 +188,12 @@ func runner(u user.User, device device.Device, commands command.Commands) map[st
 }
 
 // SSH is the entrypoint to the SSH to a device.
-func SSH() {
+func SSH(cp cli.CLIParams) {
 
 	timeNow := time.Now().Unix()
-	usr := user.LoadUser()
-	cmds := command.LoadCommands("commands.json")
-	devs := device.LoadDevices("devices.json")
+	usr := cp.User
+	cmds := cp.Commands
+	devs := cp.Devices
 
 	results := make(chan map[string]map[string]string)
 	timeout := time.After(10 * time.Second)

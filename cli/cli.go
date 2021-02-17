@@ -5,30 +5,33 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/automatico/jato/command"
+	"github.com/automatico/jato/device"
+	"github.com/automatico/jato/user"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-type params struct {
-	sshUser  string
-	sshPass  string
-	devices  string
-	commands string
+type CLIParams struct {
+	User     user.User
+	Devices  device.Devices
+	Commands command.Commands
 }
 
-func CLI() params {
+func CLI() CLIParams {
 	userPtr := flag.String("u", os.Getenv("JATO_SSH_USER"), "Username to connect to devices with")
 	askUserPassPtr := flag.Bool("p", false, "Ask for user password")
 	devicesPtr := flag.String("d", "devices.json", "Devices inventory file")
 	commandsPtr := flag.String("c", "commands.json", "Commands to run file")
 	flag.Parse()
 
-	p := params{}
+	p := CLIParams{}
+	p.User = user.User{}
 
 	if *userPtr == "" {
 		fmt.Println("A username is required.")
 		os.Exit(1)
 	} else {
-		p.sshUser = *userPtr
+		p.User.Username = *userPtr
 	}
 
 	userPass := new(string)
@@ -46,14 +49,14 @@ func CLI() params {
 			os.Exit(1)
 		}
 	} else {
-		p.sshPass = *userPass
+		p.User.Password = *userPass
 	}
 
 	fileStat(*devicesPtr)
-	p.devices = *devicesPtr
+	p.Devices = device.LoadDevices(*devicesPtr)
 
 	fileStat(*commandsPtr)
-	p.commands = *commandsPtr
+	p.Commands = command.LoadCommands(*commandsPtr)
 
 	fmt.Println("Username: ", *userPtr)
 	fmt.Println("Password: ", "********")
