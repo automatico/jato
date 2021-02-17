@@ -8,5 +8,5 @@ import (
 func main() {
 
 	cliParams := cli.CLI()
-	ssh.SSH()
+	ssh.SSH(cliParams)
 }
