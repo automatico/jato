@@ -23,7 +23,7 @@ type Params struct {
 // CLI is the interface to the CLI application
 func CLI() Params {
 	userPtr := flag.String("u", os.Getenv("JATO_SSH_USER"), "Username to connect to devices with")
-	askUserPassPtr := flag.Bool("p", false, "Ask for user password")
+	askUserPassPtr := flag.Bool("a", false, "Ask for user password")
 	devicesPtr := flag.String("d", "devices.json", "Devices inventory file")
 	commandsPtr := flag.String("c", "commands.json", "Commands to run file")
 	noOpPtr := flag.Bool("noop", false, "Dont execute job against devices")
