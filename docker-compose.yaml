@@ -4,10 +4,18 @@ services:
   app:
     build: .
     volumes:
+      - ./cli:/go/jato/cli:cached
+      - ./command:/go/jato/command:cached
+      - ./device:/go/jato/device:cached
       - ./ssh:/go/jato/ssh:cached
       - ./telnet:/go/jato/telnet:cached
+      - ./templates:/go/jato/templates:cached
       - ./test:/go/jato/test:cached
+      - ./user:/go/jato/user:cached
+      - ./utils:/go/jato/utils:cached
       - ./jato.go:/go/jato/jato.go:cached
+      - ./go.mod:/go/jato/go.mod:cached
+      - ./go.sum:/go/jato/go.sum:cached
     environment: 
       - "JATO_SSH_USER=${JATO_SSH_USER}"
       - "JATO_SSH_PASS=${JATO_SSH_PASS}"

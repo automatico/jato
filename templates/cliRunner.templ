@@ -1,0 +1,23 @@
+{{/* SPACE */}}
+--------------------------
+Job Running
+--------------------------
+Username: {{.User.Username}}
+Password: *************
+Devices:
+{{- range .Devices.Devices }}
+  - Name:      {{.Name}}
+    IP:        {{.IP}}
+    Vendor:    {{.Vendor}}
+    Platform:  {{.Platform}}
+    Connector: {{.Connector}}
+{{- end }}
+Commands:
+{{- range .Commands.Commands}}
+  - {{.}}
+{{- end }}
+
+--------------------------
+Job Result
+--------------------------
+{{/* SPACE */}}
