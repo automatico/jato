@@ -1,0 +1,13 @@
+Job Running details
+--------------------------
+Username:  {{.User.Username}}
+Password:  ********
+Devices:   
+{{- range .Devices.Devices }}
+  - {{.Name}}
+    {{.IP}}
+    {{.Vendor}}
+    {{.Platform}}
+    {{.Connector}}
+{{- end }}
+Commands:  {{.Commands.Commands}}

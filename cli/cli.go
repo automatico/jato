@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"text/template"
 
 	"github.com/automatico/jato/command"
 	"github.com/automatico/jato/device"
@@ -58,10 +59,20 @@ func CLI() CLIParams {
 	fileStat(*commandsPtr)
 	p.Commands = command.LoadCommands(*commandsPtr)
 
-	fmt.Println("Username: ", *userPtr)
+	fmt.Println("Username: ", p.User.Username)
 	fmt.Println("Password: ", "********")
-	fmt.Println("Devices:  ", *devicesPtr)
-	fmt.Println("Commands: ", *commandsPtr)
+	fmt.Println("Devices:  ", p.Devices.Devices)
+	fmt.Println("Commands: ", p.Commands.Commands)
+
+	t, err := template.ParseFiles("templates/cli.templ")
+	if err != nil {
+		panic(err)
+	}
+	err = t.Execute(os.Stdout, p)
+
+	if err != nil {
+		panic(err)
+	}
 
 	return p
 }
