@@ -49,9 +49,8 @@ func CLI() CLIParams {
 			fmt.Println("A password is required.")
 			os.Exit(1)
 		}
-	} else {
-		p.User.Password = *userPass
 	}
+	p.User.Password = *userPass
 
 	fileStat(*devicesPtr)
 	p.Devices = device.LoadDevices(*devicesPtr)
@@ -59,12 +58,7 @@ func CLI() CLIParams {
 	fileStat(*commandsPtr)
 	p.Commands = command.LoadCommands(*commandsPtr)
 
-	fmt.Println("Username: ", p.User.Username)
-	fmt.Println("Password: ", "********")
-	fmt.Println("Devices:  ", p.Devices.Devices)
-	fmt.Println("Commands: ", p.Commands.Commands)
-
-	t, err := template.ParseFiles("templates/cli.templ")
+	t, err := template.ParseFiles("templates/cliRunner.templ")
 	if err != nil {
 		panic(err)
 	}
