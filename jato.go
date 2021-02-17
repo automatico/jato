@@ -8,5 +8,8 @@ import (
 func main() {
 
 	cliParams := cli.CLI()
-	ssh.SSH(cliParams)
+	if cliParams.NoOp != true {
+		ssh.SSH(cliParams)
+	}
+
 }

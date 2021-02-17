@@ -188,7 +188,7 @@ func runner(u user.User, device device.Device, commands command.Commands) map[st
 }
 
 // SSH is the entrypoint to the SSH to a device.
-func SSH(cp cli.CLIParams) {
+func SSH(cp cli.Params) {
 
 	timeNow := time.Now().Unix()
 	usr := cp.User

@@ -51,12 +51,27 @@ Create a `devices.json` file with a list of devices to run against
 ```
 
 ## Run
+Inspect the options available
 ```
 # Linux
-./jato
+./jato -h
 
 # Windows
-./jato.exe
+./jato.exe -h
+
+Usage of jato:
+  -c string
+        Commands to run file (default "commands.json")
+  -d string
+        Devices inventory file (default "devices.json")
+  -p    Ask for user password
+  -u string
+        Username to connect to devices with (default "JATO_SSH_USER environment variable")
+```
+
+Run a series of commands against N number of devices.
+```
+./jato -d test/devices/cisco.json -c test/commands/cisco_ios.json
 ```
 The results will be saved to a `data/` directory. The result of the 
 commands run will be saved to a time stamped files. Once with the 

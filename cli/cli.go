@@ -4,37 +4,45 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"text/template"
 
 	"github.com/automatico/jato/command"
 	"github.com/automatico/jato/device"
 	"github.com/automatico/jato/user"
+	"github.com/automatico/jato/utils"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-type CLIParams struct {
+// Params contain the result of CLI input
+type Params struct {
 	User     user.User
 	Devices  device.Devices
 	Commands command.Commands
+	NoOp     bool
 }
 
-func CLI() CLIParams {
+// CLI is the interface to the CLI application
+func CLI() Params {
 	userPtr := flag.String("u", os.Getenv("JATO_SSH_USER"), "Username to connect to devices with")
 	askUserPassPtr := flag.Bool("p", false, "Ask for user password")
 	devicesPtr := flag.String("d", "devices.json", "Devices inventory file")
 	commandsPtr := flag.String("c", "commands.json", "Commands to run file")
+	noOpPtr := flag.Bool("noop", false, "Dont execute job against devices")
 	flag.Parse()
 
-	p := CLIParams{}
-	p.User = user.User{}
+	// Collect CLI parameters
+	p := Params{}
 
-	if *userPtr == "" {
+	// User
+	p.User = user.User{}
+	switch *userPtr != "" {
+	case true:
+		p.User.Username = *userPtr
+	case false:
 		fmt.Println("A username is required.")
 		os.Exit(1)
-	} else {
-		p.User.Username = *userPtr
 	}
 
+	// Password
 	userPass := new(string)
 	var err error
 	if *askUserPassPtr == true {
@@ -52,18 +60,20 @@ func CLI() CLIParams {
 	}
 	p.User.Password = *userPass
 
-	fileStat(*devicesPtr)
+	// Devices
+	utils.FileStat(*devicesPtr)
 	p.Devices = device.LoadDevices(*devicesPtr)
 
-	fileStat(*commandsPtr)
+	// Commands
+	utils.FileStat(*commandsPtr)
 	p.Commands = command.LoadCommands(*commandsPtr)
 
-	t, err := template.ParseFiles("templates/cliRunner.templ")
-	if err != nil {
-		panic(err)
-	}
-	err = t.Execute(os.Stdout, p)
+	// No Op
+	p.NoOp = *noOpPtr
 
+	// CLI output
+	t := utils.LoadTemplate("templates/cliRunner.templ")
+	err = t.Execute(os.Stdout, p)
 	if err != nil {
 		panic(err)
 	}
@@ -97,13 +107,5 @@ func promptSecret(question string) (string, error) {
 		if char == "" || char == answer {
 			return answer, nil
 		}
-	}
-}
-
-func fileStat(filename string) {
-	_, err := os.Stat(filename)
-	if err != nil {
-		fmt.Printf("Filename: '%s' does not exist or is not readable.", filename)
-		os.Exit(1)
 	}
 }
