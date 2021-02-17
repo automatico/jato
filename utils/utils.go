@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -30,4 +31,13 @@ func FileStat(filename string) {
 		fmt.Printf("Filename: '%s' does not exist or is not readable.", filename)
 		os.Exit(1)
 	}
+}
+
+func ReadFile(filename string) []byte {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		fmt.Println("File reading error", err)
+		os.Exit(1)
+	}
+	return data
 }

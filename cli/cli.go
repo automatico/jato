@@ -26,8 +26,15 @@ func CLI() Params {
 	askUserPassPtr := flag.Bool("a", false, "Ask for user password")
 	devicesPtr := flag.String("d", "devices.json", "Devices inventory file")
 	commandsPtr := flag.String("c", "commands.json", "Commands to run file")
-	noOpPtr := flag.Bool("noop", false, "Dont execute job against devices")
+	noOpPtr := flag.Bool("noop", false, "Don't execute job against devices")
+	versionPtr := flag.Bool("v", false, "Jato version")
 	flag.Parse()
+
+	if *versionPtr == true {
+		version := utils.ReadFile("VERSION")
+		fmt.Printf("Jato version: %s\n", version)
+		os.Exit(0)
+	}
 
 	// Collect CLI parameters
 	p := Params{}
