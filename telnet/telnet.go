@@ -16,7 +16,7 @@ func Telnet() {
 		"show cdp neighbors",
 	}
 
-	conn, err := net.Dial("tcp", "192.168.255.200:59853")
+	conn, err := net.Dial("tcp", "192.168.255.150:23")
 	if err != nil {
 		fmt.Println("dial error:", err)
 		return
