@@ -8,7 +8,7 @@ import (
 )
 
 // https://stackoverflow.com/questions/24339660/read-whole-data-with-golang-net-conn-read
-func telnet() {
+func Telnet() {
 	commands := []string{
 		"\n",
 		"terminal length 0",
