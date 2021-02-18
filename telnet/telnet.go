@@ -32,8 +32,9 @@ func Telnet() {
 }
 
 func login(c net.Conn) {
-	bufferReader(c, "Username:", "admin")
-	bufferReader(c, "Password:", "Juniper")
+	bufferReader(c, "Username:", "\n")
+	bufferReader(c, "Password:", "admin")
+	bufferReader(c, "#:", "Juniper")
 }
 
 func bufferReader(c net.Conn, expect string, cmd string) {
