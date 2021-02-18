@@ -23,8 +23,9 @@ func Telnet() {
 	}
 	defer conn.Close()
 
-	bufferReader(conn, "Username:", "admin")
-	bufferReader(conn, "Password:", "Juniper")
+	bufferReader(conn, "Username:", "\n")
+	bufferReader(conn, "Password:", "admin")
+	bufferReader(conn, "#:", "Juniper")
 
 	for _, cmd := range commands {
 		bufferReader(conn, ">", cmd)
