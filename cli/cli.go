@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"os"
 
 	"github.com/automatico/jato/command"
@@ -11,6 +12,32 @@ import (
 	"github.com/automatico/jato/utils"
 	"golang.org/x/crypto/ssh/terminal"
 )
+
+const version = "2021.02.02"
+
+const cliRunnerTempl = `{{/* SPACE */}}
+--------------------------
+Job Parameters
+--------------------------
+Username: {{.User.Username}}
+Password: *************
+Devices:
+{{- range .Devices.Devices }}
+  - Name:      {{.Name}}
+    IP:        {{.IP}}
+    Vendor:    {{.Vendor}}
+    Platform:  {{.Platform}}
+    Connector: {{.Connector}}
+{{- end }}
+Commands:
+{{- range .Commands.Commands}}
+  - {{.}}
+{{- end }}
+
+--------------------------
+Job Result
+--------------------------
+{{/* SPACE */}}`
 
 // Params contain the result of CLI input
 type Params struct {
@@ -31,7 +58,6 @@ func CLI() Params {
 	flag.Parse()
 
 	if *versionPtr == true {
-		version := utils.ReadFile("VERSION")
 		fmt.Printf("Jato version: %s\n", version)
 		os.Exit(0)
 	}
@@ -79,7 +105,7 @@ func CLI() Params {
 	p.NoOp = *noOpPtr
 
 	// CLI output
-	t := utils.LoadTemplate("templates/cliRunner.templ")
+	t, _ := template.New("cliRunner").Parse(cliRunnerTempl)
 	err = t.Execute(os.Stdout, p)
 	if err != nil {
 		panic(err)

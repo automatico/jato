@@ -23,9 +23,17 @@ func telnet() {
 	}
 	defer conn.Close()
 
+	bufferReader(conn, "Username:", "admin")
+	bufferReader(conn, "Password:", "Juniper")
+
 	for _, cmd := range commands {
 		bufferReader(conn, ">", cmd)
 	}
+}
+
+func login(c net.Conn) {
+	bufferReader(c, "Username:", "admin")
+	bufferReader(c, "Password:", "Juniper")
 }
 
 func bufferReader(c net.Conn, expect string, cmd string) {
