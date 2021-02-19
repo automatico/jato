@@ -8,18 +8,37 @@ import (
 	"time"
 )
 
+type CommandExpect struct {
+	command string
+	expect  string
+}
+
 // https://stackoverflow.com/questions/24339660/read-whole-data-with-golang-net-conn-read
+// https://stackoverflow.com/questions/23531891/how-do-i-succinctly-remove-the-first-element-from-a-slice-in-go
 func Telnet() {
-	commands := []string{
-		// "\n",
-		"admin",
-		"Juniper",
-		// "terminal length 0",
-		// "show version",
-		// "show ip interface brief",
-		// "show cdp neighbors",
-		// "show ip arp",
-		// "exit",
+	commands := []struct {
+		command string
+		expect  string
+	}{
+		{
+			command: "terminal length 0",
+			expect:  "#",
+		}, {
+			command: "show version",
+			expect:  "#",
+		}, {
+			command: "show ip interface brief",
+			expect:  "#",
+		}, {
+			command: "show cdp neighbors",
+			expect:  "#",
+		}, {
+			command: "show ip arp",
+			expect:  "#",
+		}, {
+			command: "show running-config",
+			expect:  "#",
+		},
 	}
 
 	conn, err := net.Dial("tcp", "192.168.255.150:23")
@@ -28,120 +47,73 @@ func Telnet() {
 		return
 	}
 	defer conn.Close()
+
+	auth(conn)
+
 	for _, cmd := range commands {
 		// fmt.Println(cmd)
-		fmt.Fprintf(conn, cmd+"\n")
+		// fmt.Fprintf(conn, cmd+"\n")
+		result := bufferReader(conn, cmd.command, cmd.expect)
+		fmt.Println("-------------------------")
+		fmt.Println(result)
+		fmt.Println("-------------------------")
 	}
+}
 
-	// Works
-	// result, _ := ioutil.ReadAll(conn)
-	// fmt.Println(string(result))
+func auth(conn net.Conn) {
+	commands := map[string]string{
+		"":        "Username:",
+		"admin":   "Password:",
+		"Juniper": "#",
+	}
+	var result []string
+	for cmd, expect := range commands {
+		// fmt.Println(cmd)
+		// fmt.Fprintf(conn, cmd+"\n")
+		result = append(result, bufferReader(conn, cmd, expect))
+	}
+	fmt.Println("-------------------------")
+	fmt.Println(strings.Join(result, ""))
+	fmt.Println("-------------------------")
+}
 
-	// Works
-	t := 1 * time.Second
-	conn.SetReadDeadline(time.Now().Add(t))
+func bufferReader(conn net.Conn, cmd string, expect string) string {
+	maxQueueLength := len(expect)
+	t := 5 * time.Second
 	buf := make([]byte, 0, 4096) // big buffer
 	tmp := make([]byte, 1)       // using small tmo buffer for demonstrating
-	container := []string{}
+	queue := []string{}
+
+	fmt.Fprintf(conn, cmd+"\n")
+
 	for {
+		conn.SetReadDeadline(time.Now().Add(t))
 		n, err := conn.Read(tmp)
+
 		if err != nil {
 			if err != io.EOF {
 				fmt.Println("read error:", err)
 			}
 			break
 		}
+
 		buf = append(buf, tmp[:n]...)
-		// fmt.Println(string(tmp))
-		maxLength := len("Password:")
-		if len(container) == maxLength {
-			fmt.Println("maxed out")
-			fmt.Println(strings.Join(container, ""))
-			if strings.Join(container, "") == "Password:" {
-				fmt.Println(container)
-				fmt.Println(strings.Join(container, ""))
+		if maxQueueLength == 1 && string(tmp) == expect {
+			break
+		} else if len(queue) == maxQueueLength {
+			if strings.Join(queue, "") == expect {
 				break
 			} else {
 				// Pop the front elememnt and shift the rest of the
 				// elements left.
-				_, container = container[0], container[1:]
-				container = append(container, string(tmp))
-				fmt.Println("shifted")
-				fmt.Println(strings.Join(container, ""))
+				_, queue = queue[0], queue[1:]
+				queue = append(queue, string(tmp))
 			}
 		} else {
-			container = append(container, string(tmp))
-			fmt.Println(container)
-		}
-
-		switch {
-		case strings.Contains(string(tmp[:n]), "Username:"):
-			fmt.Println("OHKAY - Username")
-			break
-			//fmt.Fprintf(conn, "admin"+"\n")
-		case strings.Contains(string(tmp[:n]), "Password:"):
-			// fmt.Fprintf(conn, "Juniper"+"\n")
-			fmt.Println("OHKAY - Password")
-			break
-		case strings.HasSuffix(string(tmp[:n]), "#"):
-			// fmt.Fprintf(conn, "terminal length 0"+"\n")
-			fmt.Println("OHKAY - Prompt")
-			break
-
-		default:
-			fmt.Println("NOOPE")
+			// Queue is not full, so add elements to queue.
+			queue = append(queue, string(tmp))
 		}
 
 	}
-	fmt.Println("total size:", len(buf))
-	fmt.Println(string(buf))
-
-}
-
-func reader(c net.Conn, cmd string) {
-	fmt.Fprintf(c, cmd+"\n")
-
-	buf := make([]byte, 0, 4096) // big buffer
-	tmp := make([]byte, 256)     // using small tmo buffer for demonstrating
-	for {
-		n, err := c.Read(tmp)
-		if err != nil {
-			if err != io.EOF {
-				fmt.Println("read error:", err)
-			}
-			break
-		}
-		buf = append(buf, tmp[:n]...)
-		fmt.Println(string(buf))
-
-	}
-	fmt.Println("total size:", len(buf))
-	fmt.Println(string(buf))
-}
-
-func bufferReader(c net.Conn, expect string, cmd string) {
-	fmt.Fprintf(c, cmd+"\n")
-	//fmt.Fprintf(conn, "show version")
-
-	buf := make([]byte, 0, 1024) // big buffer
-	tmp := make([]byte, 256)     // using small tmo buffer for demonstrating
-	for {
-		n, err := c.Read(tmp)
-		if err != nil {
-			if err != io.EOF {
-				fmt.Println("read error:", err)
-			}
-			break
-		}
-		// fmt.Println("got", n, "bytes.")
-		buf = append(buf, tmp[:n]...)
-		// fmt.Println(string(buf))
-		if strings.HasSuffix(string(buf), expect) {
-			fmt.Println(string(buf))
-			break
-		}
-
-	}
-	fmt.Println("total size:", len(buf))
-	fmt.Println(string(buf))
+	return string(buf)
 }
