@@ -16,29 +16,13 @@ type CommandExpect struct {
 // https://stackoverflow.com/questions/24339660/read-whole-data-with-golang-net-conn-read
 // https://stackoverflow.com/questions/23531891/how-do-i-succinctly-remove-the-first-element-from-a-slice-in-go
 func Telnet() {
-	commands := []struct {
-		command string
-		expect  string
-	}{
-		{
-			command: "terminal length 0",
-			expect:  "#",
-		}, {
-			command: "show version",
-			expect:  "#",
-		}, {
-			command: "show ip interface brief",
-			expect:  "#",
-		}, {
-			command: "show cdp neighbors",
-			expect:  "#",
-		}, {
-			command: "show ip arp",
-			expect:  "#",
-		}, {
-			command: "show running-config",
-			expect:  "#",
-		},
+	commands := []CommandExpect{
+		{"terminal length 0", "#"},
+		{"show version", "#"},
+		{"show ip interface brief", "#"},
+		{"show cdp neighbors", "#"},
+		{"show ip arp", "#"},
+		{"show running-config", "#"},
 	}
 
 	conn, err := net.Dial("tcp", "192.168.255.150:23")
@@ -51,7 +35,7 @@ func Telnet() {
 	auth(conn)
 
 	for _, cmd := range commands {
-		// fmt.Println(cmd)
+		// fmt.Println("Command:", cmd.command, "Expect:", cmd.expect)
 		// fmt.Fprintf(conn, cmd+"\n")
 		result := bufferReader(conn, cmd.command, cmd.expect)
 		fmt.Println("-------------------------")
@@ -61,16 +45,16 @@ func Telnet() {
 }
 
 func auth(conn net.Conn) {
-	commands := map[string]string{
-		"":        "Username:",
-		"admin":   "Password:",
-		"Juniper": "#",
+	commands := []CommandExpect{
+		{"", "Username:"},
+		{"admin", "Password:"},
+		{"Juniper", "#"},
 	}
 	var result []string
-	for cmd, expect := range commands {
+	for _, cmd := range commands {
 		// fmt.Println(cmd)
 		// fmt.Fprintf(conn, cmd+"\n")
-		result = append(result, bufferReader(conn, cmd, expect))
+		result = append(result, bufferReader(conn, cmd.command, cmd.expect))
 	}
 	fmt.Println("-------------------------")
 	fmt.Println(strings.Join(result, ""))
@@ -78,18 +62,26 @@ func auth(conn net.Conn) {
 }
 
 func bufferReader(conn net.Conn, cmd string, expect string) string {
-	maxQueueLength := len(expect)
-	t := 5 * time.Second
-	buf := make([]byte, 0, 4096) // big buffer
-	tmp := make([]byte, 1)       // using small tmo buffer for demonstrating
+	// How long to wait for response from device
+	// before we giveup and consider it timed out.
+	timeout := 5 * time.Second
+	// big buffer holds the result
+	buffer := make([]byte, 0, 4096)
+	// used to read characters into queue
+	tmp := make([]byte, 1)
+	// holds number of characters equal to maxQueueLength for
+	// matching the expect string
 	queue := []string{}
+	maxQueueLength := len(expect)
 
+	// Send command to device
 	fmt.Fprintf(conn, cmd+"\n")
 
 	for {
-		conn.SetReadDeadline(time.Now().Add(t))
-		n, err := conn.Read(tmp)
+		// Set timeout for reading from device
+		conn.SetReadDeadline(time.Now().Add(timeout))
 
+		n, err := conn.Read(tmp)
 		if err != nil {
 			if err != io.EOF {
 				fmt.Println("read error:", err)
@@ -97,7 +89,8 @@ func bufferReader(conn net.Conn, cmd string, expect string) string {
 			break
 		}
 
-		buf = append(buf, tmp[:n]...)
+		buffer = append(buffer, tmp[:n]...)
+
 		if maxQueueLength == 1 && string(tmp) == expect {
 			break
 		} else if len(queue) == maxQueueLength {
@@ -115,5 +108,5 @@ func bufferReader(conn net.Conn, cmd string, expect string) string {
 		}
 
 	}
-	return string(buf)
+	return string(buffer)
 }
