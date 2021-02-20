@@ -15,6 +15,7 @@ type Outputs struct {
 type Result struct {
 	Device    string
 	Ok        bool
+	err       string
 	Outputs   []Outputs
 	Timestamp int64
 }

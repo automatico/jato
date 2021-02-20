@@ -25,15 +25,13 @@ func Telnet() {
 
 	commands := []command.CommandExpect{
 		{Command: "terminal length 0", Expect: "#"},
-		// {Command: "show version", Expect: "#"},
-		// {Command: "show ip interface brief", Expect: "#"},
-		// {Command: "show cdp neighbors", Expect: "#"},
-		// {Command: "show ip arp", Expect: "#"},
-		// {Command: "show running-config", Expect: "#"},
+		{Command: "show version", Expect: "#"},
+		{Command: "show ip interface brief", Expect: "#"},
+		{Command: "show cdp neighbors", Expect: "#"},
+		{Command: "show ip arp", Expect: "#"},
+		{Command: "show running-config", Expect: "#"},
 	}
 
-	timeBase := time.After(len(devices) * time.Now().Second())
-	timeout := time.After(10 * time.Second)
 	results := make(chan bool)
 	for _, dev := range devices {
 		go func(d device.Device, c []command.CommandExpect) {
@@ -42,6 +40,7 @@ func Telnet() {
 	}
 
 	for range devices {
+		timeout := time.After(10 * time.Second)
 		select {
 		case result := <-results:
 			fmt.Println(result)
