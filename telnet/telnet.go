@@ -18,10 +18,10 @@ const telnetPort int = 23
 func Telnet() {
 	devices := []device.Device{
 		{Name: "iosv-1", IP: "192.168.255.150", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		// {Name: "iosv-4", IP: "192.168.255.154", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		// {Name: "iosv-5", IP: "192.168.255.155", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		// {Name: "iosv-6", IP: "192.168.255.156", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		// {Name: "iosv-7", IP: "192.168.255.157", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
+		{Name: "iosv-4", IP: "192.168.255.154", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
+		{Name: "iosv-5", IP: "192.168.255.155", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
+		{Name: "iosv-6", IP: "192.168.255.156", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
+		{Name: "iosv-7", IP: "192.168.255.157", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
 	}
 
 	commands := []command.CommandExpect{
@@ -33,24 +33,26 @@ func Telnet() {
 		{Command: "show running-config", Expect: "#"},
 	}
 
-	results := make(chan result.Result)
+	results := result.Results{}
+	chanResult := make(chan result.Result)
 	for _, dev := range devices {
 		go func(d device.Device, c []command.CommandExpect) {
-			results <- runner(d, c)
+			chanResult <- runner(d, c)
 		}(dev, commands)
 	}
 
 	for range devices {
 		timeout := time.After(10 * time.Second)
 		select {
-		case res := <-results:
-			fmt.Println(res)
+		case res := <-chanResult:
+			results.Results = append(results.Results, res)
+			// fmt.Println(res)
 		case <-timeout:
 			fmt.Println("Timed out!")
 			return
 		}
 	}
-
+	fmt.Println(results)
 }
 
 func runner(dev device.Device, commands []command.CommandExpect) result.Result {

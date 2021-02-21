@@ -10,7 +10,7 @@ type Output struct {
 type Result struct {
 	Device    string
 	Ok        bool
-	err       string
+	Error     string
 	Outputs   []Output
 	Timestamp int64
 }
