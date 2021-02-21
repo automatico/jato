@@ -9,6 +9,7 @@ import (
 
 	"github.com/automatico/jato/command"
 	"github.com/automatico/jato/device"
+	"github.com/automatico/jato/result"
 )
 
 const telnetPort int = 23
@@ -17,10 +18,10 @@ const telnetPort int = 23
 func Telnet() {
 	devices := []device.Device{
 		{Name: "iosv-1", IP: "192.168.255.150", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		{Name: "iosv-4", IP: "192.168.255.154", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		{Name: "iosv-5", IP: "192.168.255.155", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		{Name: "iosv-6", IP: "192.168.255.156", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		{Name: "iosv-7", IP: "192.168.255.157", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
+		// {Name: "iosv-4", IP: "192.168.255.154", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
+		// {Name: "iosv-5", IP: "192.168.255.155", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
+		// {Name: "iosv-6", IP: "192.168.255.156", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
+		// {Name: "iosv-7", IP: "192.168.255.157", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
 	}
 
 	commands := []command.CommandExpect{
@@ -32,7 +33,7 @@ func Telnet() {
 		{Command: "show running-config", Expect: "#"},
 	}
 
-	results := make(chan bool)
+	results := make(chan result.Result)
 	for _, dev := range devices {
 		go func(d device.Device, c []command.CommandExpect) {
 			results <- runner(d, c)
@@ -42,8 +43,8 @@ func Telnet() {
 	for range devices {
 		timeout := time.After(10 * time.Second)
 		select {
-		case result := <-results:
-			fmt.Println(result)
+		case res := <-results:
+			fmt.Println(res)
 		case <-timeout:
 			fmt.Println("Timed out!")
 			return
@@ -52,11 +53,15 @@ func Telnet() {
 
 }
 
-func runner(dev device.Device, commands []command.CommandExpect) bool {
+func runner(dev device.Device, commands []command.CommandExpect) result.Result {
+	r := result.Result{}
+	r.Device = dev.Name
+
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", dev.IP, telnetPort))
 	if err != nil {
 		fmt.Println("dial error:", err)
-		return false
+		r.Ok = false
+		return r
 	}
 	defer conn.Close()
 
@@ -65,12 +70,14 @@ func runner(dev device.Device, commands []command.CommandExpect) bool {
 	for _, cmd := range commands {
 		// fmt.Println("Command:", cmd.command, "Expect:", cmd.expect)
 		// fmt.Fprintf(conn, cmd+"\n")
-		result := bufferReader(conn, cmd.Command, cmd.Expect)
+		res := bufferReader(conn, cmd.Command, cmd.Expect)
 		fmt.Println("-------------------------")
-		fmt.Println(result)
+		fmt.Println(res)
 		fmt.Println("-------------------------")
+		r.Outputs = append(r.Outputs, result.Output{Command: cmd.Command, Output: res})
 	}
-	return true
+	r.Ok = true
+	return r
 }
 
 func auth(conn net.Conn) {
@@ -79,14 +86,14 @@ func auth(conn net.Conn) {
 		{Command: "admin", Expect: "Password:"},
 		{Command: "Juniper", Expect: "#"},
 	}
-	var result []string
+	var res []string
 	for _, cmd := range commands {
 		// fmt.Println(cmd)
 		// fmt.Fprintf(conn, cmd+"\n")
-		result = append(result, bufferReader(conn, cmd.Command, cmd.Expect))
+		res = append(res, bufferReader(conn, cmd.Command, cmd.Expect))
 	}
 	fmt.Println("-------------------------")
-	fmt.Println(strings.Join(result, ""))
+	fmt.Println(strings.Join(res, ""))
 	fmt.Println("-------------------------")
 }
 

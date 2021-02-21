@@ -6,17 +6,12 @@ type Output struct {
 	Output  string
 }
 
-// Outputs are a slice of Output
-type Outputs struct {
-	Outputs []Output
-}
-
 // Result host the result of the job run
 type Result struct {
 	Device    string
 	Ok        bool
 	err       string
-	Outputs   []Outputs
+	Outputs   []Output
 	Timestamp int64
 }
 
