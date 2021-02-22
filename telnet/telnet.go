@@ -138,6 +138,7 @@ func bufferReader(conn net.Conn, cmd string, expect string) string {
 				// Pop the front elememnt and shift the rest of the
 				// elements left.
 				_, queue = queue[0], queue[1:]
+				// Add element to the end of the queue
 				queue = append(queue, string(tmp))
 			}
 		} else {

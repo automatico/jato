@@ -1,4 +1,8 @@
-{{/* SPACE */}}
+package outputters
+
+// CliRunner is the outut for a
+// job run from the CLI.
+const CliRunner = `{{/* SPACE */}}
 --------------------------
 Job Parameters
 --------------------------
@@ -20,4 +24,4 @@ Commands:
 --------------------------
 Job Result
 --------------------------
-{{/* SPACE */}}
+{{/* SPACE */}}`
