@@ -15,14 +15,12 @@ import (
 const telnetPort int = 23
 
 // Telnet to a device
-func Telnet() {
-	devices := []device.Device{
-		{Name: "iosv-1", IP: "192.168.255.150", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		{Name: "iosv-4", IP: "192.168.255.154", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		{Name: "iosv-5", IP: "192.168.255.155", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		{Name: "iosv-6", IP: "192.168.255.156", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-		{Name: "iosv-7", IP: "192.168.255.157", Vendor: "cisco", Platform: "ios", Connector: "telnet"},
-	}
+func Telnet(devs []device.Device) result.Results {
+
+	//timeNow := time.Now().Unix()
+	//usr := cp.User
+	//cmds := cp.Commands
+	// devs := cp.Devices
 
 	commands := []command.CommandExpect{
 		{Command: "terminal length 0", Expect: "#"},
@@ -35,34 +33,35 @@ func Telnet() {
 
 	results := result.Results{}
 	chanResult := make(chan result.Result)
-	for _, dev := range devices {
+	for _, dev := range devs {
 		go func(d device.Device, c []command.CommandExpect) {
 			chanResult <- runner(d, c)
 		}(dev, commands)
 	}
 
-	for range devices {
-		timeout := time.After(10 * time.Second)
+	for range devs {
+		timeout := time.After(5 * time.Second)
 		select {
 		case res := <-chanResult:
 			results.Results = append(results.Results, res)
 			// fmt.Println(res)
 		case <-timeout:
 			fmt.Println("Timed out!")
-			return
+			break
 		}
 	}
-	fmt.Println(results)
+	return results
 }
 
 func runner(dev device.Device, commands []command.CommandExpect) result.Result {
+	timeNow := time.Now().Unix()
 	r := result.Result{}
 	r.Device = dev.Name
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", dev.IP, telnetPort))
 	if err != nil {
 		fmt.Println("dial error:", err)
-		r.Ok = false
+		r.OK = false
 		return r
 	}
 	defer conn.Close()
@@ -70,15 +69,11 @@ func runner(dev device.Device, commands []command.CommandExpect) result.Result {
 	auth(conn)
 
 	for _, cmd := range commands {
-		// fmt.Println("Command:", cmd.command, "Expect:", cmd.expect)
-		// fmt.Fprintf(conn, cmd+"\n")
 		res := bufferReader(conn, cmd.Command, cmd.Expect)
-		fmt.Println("-------------------------")
-		fmt.Println(res)
-		fmt.Println("-------------------------")
-		r.Outputs = append(r.Outputs, result.Output{Command: cmd.Command, Output: res})
+		r.CommandOutputs = append(r.CommandOutputs, result.CommandOutput{Command: cmd.Command, Output: res})
 	}
-	r.Ok = true
+	r.OK = true
+	r.Timestamp = timeNow
 	return r
 }
 
@@ -90,13 +85,8 @@ func auth(conn net.Conn) {
 	}
 	var res []string
 	for _, cmd := range commands {
-		// fmt.Println(cmd)
-		// fmt.Fprintf(conn, cmd+"\n")
 		res = append(res, bufferReader(conn, cmd.Command, cmd.Expect))
 	}
-	fmt.Println("-------------------------")
-	fmt.Println(strings.Join(res, ""))
-	fmt.Println("-------------------------")
 }
 
 func bufferReader(conn net.Conn, cmd string, expect string) string {
