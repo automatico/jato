@@ -71,7 +71,7 @@ func seperator(s string) string {
 	tw := int(getWidth())
 	var str strings.Builder
 	for i := 1; i < tw; i++ {
-		str.WriteString("+")
+		str.WriteString(s)
 	}
 	return str.String() + "\n"
 }
