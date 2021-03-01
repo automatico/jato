@@ -64,11 +64,14 @@ func getWidth() uint {
 	return uint(ws.Col)
 }
 
-func seperator() string {
-	tw := int(getWidth())
-	var s strings.Builder
-	for i := 1; i < tw; i++ {
-		s.WriteString("+")
+func seperator(s string) string {
+	if s == "" {
+		s = "+"
 	}
-	return s.String() + "\n"
+	tw := int(getWidth())
+	var str strings.Builder
+	for i := 1; i < tw; i++ {
+		str.WriteString("+")
+	}
+	return str.String() + "\n"
 }
