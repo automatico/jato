@@ -6,7 +6,7 @@ import (
 	"unsafe"
 )
 
-var termWidth = seperator()
+var termWidth = seperator("+")
 
 // JobResult ...
 var JobResult = termWidth + "Job Result\n" + termWidth
@@ -65,9 +65,6 @@ func getWidth() uint {
 }
 
 func seperator(s string) string {
-	if s == "" {
-		s = "+"
-	}
 	tw := int(getWidth())
 	var str strings.Builder
 	for i := 1; i < tw; i++ {
