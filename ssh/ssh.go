@@ -20,9 +20,7 @@ import (
 )
 
 // SSHPort ...
-const (
-	SSHPort = 22
-)
+const SSHPort int = 22
 
 // Expect like interface
 func expecter(cmd string, expect string, timeout int, sshIn io.WriteCloser, sshOut io.Reader) string {

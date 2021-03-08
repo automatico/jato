@@ -4,13 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"text/template"
 
 	"github.com/automatico/jato/command"
 	"github.com/automatico/jato/device"
+	"github.com/automatico/jato/output"
 	"github.com/automatico/jato/user"
 	"github.com/automatico/jato/utils"
 	"golang.org/x/crypto/ssh/terminal"
 )
+
+const version = "2021.02.02"
 
 // Params contain the result of CLI input
 type Params struct {
@@ -31,19 +35,18 @@ func CLI() Params {
 	flag.Parse()
 
 	if *versionPtr == true {
-		version := utils.ReadFile("VERSION")
 		fmt.Printf("Jato version: %s\n", version)
 		os.Exit(0)
 	}
 
 	// Collect CLI parameters
-	p := Params{}
+	params := Params{}
 
 	// User
-	p.User = user.User{}
+	params.User = user.User{}
 	switch *userPtr != "" {
 	case true:
-		p.User.Username = *userPtr
+		params.User.Username = *userPtr
 	case false:
 		fmt.Println("A username is required.")
 		os.Exit(1)
@@ -65,27 +68,33 @@ func CLI() Params {
 			os.Exit(1)
 		}
 	}
-	p.User.Password = *userPass
+	params.User.Password = *userPass
 
 	// Devices
 	utils.FileStat(*devicesPtr)
-	p.Devices = device.LoadDevices(*devicesPtr)
+	params.Devices = device.LoadDevices(*devicesPtr)
 
 	// Commands
 	utils.FileStat(*commandsPtr)
-	p.Commands = command.LoadCommands(*commandsPtr)
+	params.Commands = command.LoadCommands(*commandsPtr)
 
 	// No Op
-	p.NoOp = *noOpPtr
+	params.NoOp = *noOpPtr
 
 	// CLI output
-	t := utils.LoadTemplate("templates/cliRunner.templ")
-	err = t.Execute(os.Stdout, p)
+	t, err := template.New("output").Parse(output.CliRunner)
+
 	if err != nil {
 		panic(err)
 	}
 
-	return p
+	err = t.Execute(os.Stdout, params)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return params
 }
 
 // promptSecret prompts user for an input that is not echo-ed on terminal.
