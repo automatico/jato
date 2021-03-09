@@ -44,6 +44,8 @@ const CliResult = `{{/* SPACE */}}
   Timestamp: {{.Timestamp}}
 {{/* SPACE */}}`
 
+// The below is used to determine the size of
+// the terminal session.
 type winsize struct {
 	Row    uint16
 	Col    uint16
