@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"os"
-	"text/template"
 
 	"github.com/automatico/jato/cli"
 	"github.com/automatico/jato/device"

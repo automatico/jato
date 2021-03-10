@@ -7,9 +7,9 @@ import (
 	"text/template"
 
 	"github.com/automatico/jato/command"
+	"github.com/automatico/jato/credentials"
 	"github.com/automatico/jato/device"
 	"github.com/automatico/jato/output"
-	"github.com/automatico/jato/user"
 	"github.com/automatico/jato/utils"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -18,10 +18,10 @@ const version = "2021.02.02"
 
 // Params contain the result of CLI input
 type Params struct {
-	User     user.User
-	Devices  device.Devices
-	Commands command.Commands
-	NoOp     bool
+	Credentials credentials.UserCredentials
+	Devices     device.Devices
+	Commands    command.Commands
+	NoOp        bool
 }
 
 // CLI is the interface to the CLI application
@@ -39,15 +39,17 @@ func CLI() Params {
 		os.Exit(0)
 	}
 
-	// Collect CLI parameters
+	// Used to collect CLI parameters
 	params := Params{}
 
+	userCreds := credentials.UserCredentials{}.Load()
+
 	// User
-	params.User = user.User{}
-	switch *userPtr != "" {
-	case true:
-		params.User.Username = *userPtr
-	case false:
+	params.Credentials = userCreds
+
+	if *userPtr != "" {
+		params.Credentials.Username = *userPtr
+	} else if params.Credentials.Username == "" {
 		fmt.Println("A username is required.")
 		os.Exit(1)
 	}
@@ -56,19 +58,18 @@ func CLI() Params {
 	userPass := new(string)
 	var err error
 	if *askUserPassPtr == true {
-		*userPass, err = promptSecret("Enter user password?")
+		*userPass, err = promptSecret("Enter user password:")
+		params.Credentials.Password = *userPass
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 	} else if *askUserPassPtr == false {
-		*userPass = os.Getenv("JATO_SSH_PASS")
-		if *userPass == "" {
+		if userCreds.Password == "" {
 			fmt.Println("A password is required.")
 			os.Exit(1)
 		}
 	}
-	params.User.Password = *userPass
 
 	// Devices
 	utils.FileStat(*devicesPtr)

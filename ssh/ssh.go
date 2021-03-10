@@ -13,8 +13,8 @@ import (
 
 	"github.com/automatico/jato/cli"
 	"github.com/automatico/jato/command"
+	"github.com/automatico/jato/credentials"
 	"github.com/automatico/jato/device"
-	"github.com/automatico/jato/user"
 	"github.com/automatico/jato/utils"
 	"golang.org/x/crypto/ssh"
 )
@@ -135,14 +135,14 @@ func createDeviceDir(s string) {
 	}
 }
 
-func runner(u user.User, device device.Device, commands command.Commands) map[string]map[string]string {
+func runner(creds credentials.UserCredentials, device device.Device, commands command.Commands) map[string]map[string]string {
 
 	results := make(map[string]string)
 
 	sshConfig := &ssh.ClientConfig{
-		User: u.Username,
+		User: creds.Username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(u.Password),
+			ssh.Password(creds.Password),
 		},
 		// Make this an option
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
@@ -189,7 +189,7 @@ func runner(u user.User, device device.Device, commands command.Commands) map[st
 func SSH(cp cli.Params) {
 
 	timeNow := time.Now().Unix()
-	usr := cp.User
+	crd := cp.Credentials
 	cmds := cp.Commands
 	devs := cp.Devices
 
@@ -197,9 +197,9 @@ func SSH(cp cli.Params) {
 	timeout := time.After(10 * time.Second)
 
 	for _, dev := range devs.Devices {
-		go func(u user.User, d device.Device, c command.Commands) {
-			results <- runner(u, d, c)
-		}(usr, dev, cmds)
+		go func(crd credentials.UserCredentials, d device.Device, c command.Commands) {
+			results <- runner(crd, d, c)
+		}(crd, dev, cmds)
 	}
 
 	for range devs.Devices {

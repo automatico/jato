@@ -17,8 +17,10 @@ const CliRunner = `{{/* SPACE */}}
 --------------------------
 Job Parameters
 --------------------------
-Username: {{.User.Username}}
-Password: *************
+Username: {{.Credentials.Username}}
+Password: {{.Credentials.Password}}
+SSH key file: {{.Credentials.SSHKeyFile}}
+Super Password: {{.Credentials.SuperPassword}}
 
 Devices:
 {{- range .Devices.Devices }}
