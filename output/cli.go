@@ -9,17 +9,15 @@ import (
 
 var termWidth = seperator("+")
 
-// JobResult ...
-var JobResult = termWidth + "Job Result\n" + termWidth
-
 // CliRunner is the outut for a
 // job run from the CLI.
 const CliRunner = `{{/* SPACE */}}
 {{.divider}}
-Username: {{.params.Credentials.Username}}
-Password: {{.params.Credentials.Password}}
-SSH key file: {{.params.Credentials.SSHKeyFile}}
-Super Password: {{.params.Credentials.SuperPassword}}
+Credentials:
+  - Username:       {{.params.Credentials.Username}}
+  - Password:       {{.params.Credentials.Password}}
+  - SSH Key File:   {{.params.Credentials.SSHKeyFile}}
+  - Super Password: {{.params.Credentials.SuperPassword}}
 
 Devices:
 {{- range .params.Devices.Devices }}
@@ -76,6 +74,11 @@ func seperator(s string) string {
 	return str.String()
 }
 
+// Divider is used to output a dividing string
+// between outputs. EG:
+// ++++++++++++++++++++
+// Job Parameters
+// ++++++++++++++++++++
 func Divider(message string) string {
 	return fmt.Sprintf("%s\n%s\n%s\n", termWidth, message, termWidth)
 }

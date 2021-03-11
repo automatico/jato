@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"os"
 
@@ -34,6 +35,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
+		fmt.Println(output.Divider("Job Results"))
 
 		for _, r := range results.Results {
 			err = t.Execute(os.Stdout, r)

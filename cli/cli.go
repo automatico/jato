@@ -82,13 +82,13 @@ func CLI() Params {
 	// No Op
 	params.NoOp = *noOpPtr
 
-	// CLI output
-	t, err := template.New("output").Parse(output.CliRunner)
-	divider := output.Divider("Job Results")
+	// Output data to feed into template
 	data := map[string]interface{}{}
-	data["divider"] = divider
+	data["divider"] = output.Divider("Job Parameters")
 	data["params"] = params
 
+	// CLI output
+	t, err := template.New("output").Parse(output.CliRunner)
 	if err != nil {
 		panic(err)
 	}
