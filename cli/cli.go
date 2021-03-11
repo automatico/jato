@@ -84,12 +84,16 @@ func CLI() Params {
 
 	// CLI output
 	t, err := template.New("output").Parse(output.CliRunner)
+	divider := output.Divider("Job Results")
+	data := map[string]interface{}{}
+	data["divider"] = divider
+	data["params"] = params
 
 	if err != nil {
 		panic(err)
 	}
 
-	err = t.Execute(os.Stdout, params)
+	err = t.Execute(os.Stdout, data)
 
 	if err != nil {
 		panic(err)
