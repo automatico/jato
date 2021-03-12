@@ -52,7 +52,6 @@ func main() {
 		}
 	}
 	jt.Devices.Devices = telnetDevices
-	fmt.Println(telnetDevices)
 
 	if !cliParams.NoOp {
 		// ssh.SSH(cliParams)

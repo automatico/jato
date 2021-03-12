@@ -56,6 +56,7 @@ func Expecter(connection net.Conn, command string, expecting string, timeout int
 			if err != io.EOF {
 				return "read error", err
 			}
+			break // Exit the if statement
 		}
 
 		result = append(result, tmp[:n]...)

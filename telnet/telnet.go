@@ -27,7 +27,7 @@ func Telnet(jt connector.Jato) result.Results {
 	}
 
 	for range jt.Devices.Devices {
-		timeout := time.After(2 * time.Second)
+		timeout := time.After(5 * time.Second)
 		select {
 		case res := <-chanResult:
 			results.Results = append(results.Results, res)
@@ -51,20 +51,7 @@ func runner(dev device.Device, commands expecter.CommandExpect) result.Result {
 		return r
 	}
 	defer conn.Close()
-	// auth(conn)
-
-	authCommands := []command.CommandExpect{
-		{Command: "", Expect: "Username:"},
-		{Command: "admin", Expect: "Password:"},
-		{Command: "Juniper", Expect: "#"},
-	}
-	for _, cmd := range authCommands {
-		result, err := expecter.Expecter(conn, cmd.Command, cmd.Expect, 5000)
-		if err != nil {
-			fmt.Println(result)
-			fmt.Println(err)
-		}
-	}
+	auth(conn)
 
 	for _, cmd := range commands.CommandExpect {
 		res, err := expecter.Expecter(conn, cmd.Command, cmd.Expecting, cmd.Timeout)
@@ -76,7 +63,6 @@ func runner(dev device.Device, commands expecter.CommandExpect) result.Result {
 	}
 	r.OK = true
 	r.Timestamp = timeNow
-	fmt.Println(r)
 	return r
 }
 
