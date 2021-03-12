@@ -8,38 +8,42 @@ import (
 	"time"
 
 	"github.com/automatico/jato/command"
+	"github.com/automatico/jato/connector"
 	"github.com/automatico/jato/device"
+	"github.com/automatico/jato/expecter"
 	"github.com/automatico/jato/result"
 )
 
 const telnetPort int = 23
 
 // Telnet to a device
-func Telnet(devs []device.Device) result.Results {
+func Telnet(jt connector.Jato) result.Results {
 
 	//timeNow := time.Now().Unix()
 	//usr := cp.User
 	//cmds := cp.Commands
 	// devs := cp.Devices
 
-	commands := []command.CommandExpect{
-		{Command: "terminal length 0", Expect: "#"},
-		{Command: "show version", Expect: "#"},
-		{Command: "show ip interface brief", Expect: "#"},
-		{Command: "show cdp neighbors", Expect: "#"},
-		{Command: "show ip arp", Expect: "#"},
-		{Command: "show running-config", Expect: "#"},
+	commands := expecter.CommandExpect{
+		CommandExpect: []expecter.Expect{
+			{Command: "terminal length 0", Expecting: "#", Timeout: 5},
+			{Command: "show version", Expecting: "#", Timeout: 5},
+			{Command: "show ip interface brief", Expecting: "#", Timeout: 5},
+			{Command: "show cdp neighbors", Expecting: "#", Timeout: 5},
+			{Command: "show ip arp", Expecting: "#", Timeout: 5},
+			{Command: "show running-config", Expecting: "#", Timeout: 5},
+		},
 	}
 
 	results := result.Results{}
 	chanResult := make(chan result.Result)
-	for _, dev := range devs {
-		go func(d device.Device, c []command.CommandExpect) {
+	for _, dev := range jt.Devices.Devices {
+		go func(d device.Device, c expecter.CommandExpect) {
 			chanResult <- runner(d, c)
 		}(dev, commands)
 	}
 
-	for range devs {
+	for range jt.Devices.Devices {
 		timeout := time.After(5 * time.Second)
 		select {
 		case res := <-chanResult:
@@ -53,7 +57,7 @@ func Telnet(devs []device.Device) result.Results {
 	return results
 }
 
-func runner(dev device.Device, commands []command.CommandExpect) result.Result {
+func runner(dev device.Device, commands expecter.CommandExpect) result.Result {
 	timeNow := time.Now().Unix()
 	r := result.Result{}
 	r.Device = dev.Name
@@ -68,8 +72,8 @@ func runner(dev device.Device, commands []command.CommandExpect) result.Result {
 
 	auth(conn)
 
-	for _, cmd := range commands {
-		res := bufferReader(conn, cmd.Command, cmd.Expect)
+	for _, cmd := range commands.CommandExpect {
+		res := bufferReader(conn, cmd.Command, cmd.Expecting)
 		r.CommandOutputs = append(r.CommandOutputs, result.CommandOutput{Command: cmd.Command, Output: res})
 	}
 	r.OK = true

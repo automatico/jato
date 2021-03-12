@@ -1,19 +1,28 @@
 package expecter
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net"
 	"strings"
 	"time"
 )
 
+// Expect struct
+// Command: command to run
+// Expecting: string you are expecting
+// Timeout: How long to wait for a command
 type Expect struct {
 	Command   string `json:"command"`
 	Expecting string `json:"expecting"`
 	Timeout   int64  `json:"timeout"`
 }
 
+// CommandExpect holds a slice of
+// Expect Structs
 type CommandExpect struct {
 	CommandExpect []Expect `json:"command_expect"`
 }
@@ -23,13 +32,14 @@ type CommandExpect struct {
 // returns the result
 func Expecter(connection net.Conn, command string, expecting string, timeout int64) (string, error) {
 	// How long to wait for response from device
-	// before we giveup and consider it timed out.
+	// before we give up and consider it timed out.
 	countdown := time.Duration(timeout) * time.Millisecond
-	// big buffer holds the result
-	buffer := make([]byte, 0, 4096)
-	// used to read characters into queue
+
+	// Big buffer holds the result
+	result := make([]byte, 0, 4096)
+	// Used to read characters into queue
 	tmp := make([]byte, 1)
-	// holds number of characters equal to maxQueueLength for
+	// Holds number of characters equal to maxQueueLength for
 	// matching the expect string
 	queue := []string{}
 	maxQueueLength := len(expecting)
@@ -44,30 +54,49 @@ func Expecter(connection net.Conn, command string, expecting string, timeout int
 		n, err := connection.Read(tmp)
 		if err != nil {
 			if err != io.EOF {
-				fmt.Println("read error:", err)
+				return "read error", err
 			}
-			break
+			return "EOF error maybe?", err
 		}
 
-		buffer = append(buffer, tmp[:n]...)
+		result = append(result, tmp[:n]...)
 
 		if maxQueueLength == 1 && string(tmp) == expecting {
+			// Your done, exit the loop
 			break
 		} else if len(queue) == maxQueueLength {
+			// Queue is full, check for expecting string
 			if strings.Join(queue, "") == expecting {
+				// Your done, exit the loop
 				break
 			} else {
 				// Pop the front elememnt and shift the rest of the
-				// elements left.
+				// elements left
 				_, queue = queue[0], queue[1:]
 				// Add element to the end of the queue
 				queue = append(queue, string(tmp))
 			}
 		} else {
-			// Queue is not full, so add elements to queue.
+			// Queue is not full, so add elements to queue
 			queue = append(queue, string(tmp))
 		}
 
 	}
-	return string(buffer), nil
+	return string(result), nil
+}
+
+func LoadCommands(fileName string) CommandExpect {
+	file, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data := CommandExpect{}
+
+	err = json.Unmarshal([]byte(file), &data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return data
 }

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/automatico/jato/cli"
-	"github.com/automatico/jato/command"
+	"github.com/automatico/jato/connector"
 	"github.com/automatico/jato/credentials"
 	"github.com/automatico/jato/device"
+	"github.com/automatico/jato/expecter"
 	"github.com/automatico/jato/utils"
 	"golang.org/x/crypto/ssh"
 )
@@ -23,7 +23,7 @@ import (
 const SSHPort int = 22
 
 // Expect like interface
-func expecter(cmd string, expect string, timeout int, sshIn io.WriteCloser, sshOut io.Reader) string {
+func expecterer(cmd string, expect string, timeout int, sshIn io.WriteCloser, sshOut io.Reader) string {
 	if _, err := writeBuff(cmd, sshIn); err != nil {
 		handleError(err, true, "Failed to run: %s")
 	}
@@ -135,7 +135,7 @@ func createDeviceDir(s string) {
 	}
 }
 
-func runner(creds credentials.UserCredentials, device device.Device, commands command.Commands) map[string]map[string]string {
+func runner(creds credentials.UserCredentials, device device.Device, commands expecter.CommandExpect) map[string]map[string]string {
 
 	results := make(map[string]string)
 
@@ -175,8 +175,8 @@ func runner(creds credentials.UserCredentials, device device.Device, commands co
 	}
 	readBuff("#", sshOut, 2)
 
-	for _, cmd := range commands.Commands {
-		results[utils.Underscorer(cmd)] = expecter(cmd, "#", 5, sshIn, sshOut)
+	for _, cmd := range commands.CommandExpect {
+		results[utils.Underscorer(cmd.Command)] = expecterer(cmd.Command, "#", 5, sshIn, sshOut)
 	}
 	session.Close()
 	res := map[string]map[string]string{
@@ -186,18 +186,18 @@ func runner(creds credentials.UserCredentials, device device.Device, commands co
 }
 
 // SSH is the entrypoint to the SSH to a device.
-func SSH(cp cli.Params) {
+func SSH(jt connector.Jato) {
 
 	timeNow := time.Now().Unix()
-	crd := cp.Credentials
-	cmds := cp.Commands
-	devs := cp.Devices
+	crd := jt.UserCredentials
+	cmds := jt.CommandExpect
+	devs := jt.Devices
 
 	results := make(chan map[string]map[string]string)
 	timeout := time.After(10 * time.Second)
 
 	for _, dev := range devs.Devices {
-		go func(crd credentials.UserCredentials, d device.Device, c command.Commands) {
+		go func(crd credentials.UserCredentials, d device.Device, c expecter.CommandExpect) {
 			results <- runner(crd, d, c)
 		}(crd, dev, cmds)
 	}

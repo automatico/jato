@@ -4,12 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"text/template"
 
-	"github.com/automatico/jato/command"
 	"github.com/automatico/jato/credentials"
 	"github.com/automatico/jato/device"
-	"github.com/automatico/jato/output"
+	"github.com/automatico/jato/expecter"
 	"github.com/automatico/jato/utils"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -20,7 +18,7 @@ const version = "2021.02.02"
 type Params struct {
 	Credentials credentials.UserCredentials
 	Devices     device.Devices
-	Commands    command.Commands
+	Commands    expecter.CommandExpect
 	NoOp        bool
 }
 
@@ -34,7 +32,7 @@ func CLI() Params {
 	versionPtr := flag.Bool("v", false, "Jato version")
 	flag.Parse()
 
-	if *versionPtr == true {
+	if *versionPtr {
 		fmt.Printf("Jato version: %s\n", version)
 		os.Exit(0)
 	}
@@ -57,14 +55,14 @@ func CLI() Params {
 	// Password
 	userPass := new(string)
 	var err error
-	if *askUserPassPtr == true {
+	if *askUserPassPtr {
 		*userPass, err = promptSecret("Enter user password:")
 		params.Credentials.Password = *userPass
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-	} else if *askUserPassPtr == false {
+	} else if !*askUserPassPtr {
 		if userCreds.Password == "" {
 			fmt.Println("A password is required.")
 			os.Exit(1)
@@ -77,27 +75,10 @@ func CLI() Params {
 
 	// Commands
 	utils.FileStat(*commandsPtr)
-	params.Commands = command.LoadCommands(*commandsPtr)
+	params.Commands = expecter.LoadCommands(*commandsPtr)
 
 	// No Op
 	params.NoOp = *noOpPtr
-
-	// Output data to feed into template
-	data := map[string]interface{}{}
-	data["divider"] = output.Divider("Job Parameters")
-	data["params"] = params
-
-	// CLI output
-	t, err := template.New("output").Parse(output.CliRunner)
-	if err != nil {
-		panic(err)
-	}
-
-	err = t.Execute(os.Stdout, data)
-
-	if err != nil {
-		panic(err)
-	}
 
 	return params
 }
