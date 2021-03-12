@@ -33,7 +33,7 @@ type CommandExpect struct {
 func Expecter(connection net.Conn, command string, expecting string, timeout int64) (string, error) {
 	// How long to wait for response from device
 	// before we give up and consider it timed out.
-	countdown := time.Duration(timeout) * time.Millisecond
+	countdown := time.Duration(timeout) * time.Second
 
 	// Big buffer holds the result
 	result := make([]byte, 0, 4096)
@@ -53,10 +53,10 @@ func Expecter(connection net.Conn, command string, expecting string, timeout int
 
 		n, err := connection.Read(tmp)
 		if err != nil {
-			if err != io.EOF {
-				return "read error", err
+			if err == io.EOF {
+				break // Reached the end of file
 			}
-			break // Exit the if statement
+			return "read error", err
 		}
 
 		result = append(result, tmp[:n]...)

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"net"
 	"os"
 
 	"github.com/automatico/jato/cli"
@@ -12,6 +13,20 @@ import (
 	"github.com/automatico/jato/telnet"
 	"github.com/automatico/jato/templates"
 )
+
+type Connector interface {
+	Connect() net.Conn
+	Auth()
+}
+
+type Runner interface {
+	Run()
+}
+
+type ConnectorRunner interface {
+	Connector
+	Runner
+}
 
 var telnetDevices []device.Device
 var sshDevices []device.Device

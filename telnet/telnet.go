@@ -58,7 +58,7 @@ func runner(dev device.Device, commands expecter.CommandExpect) result.Result {
 		r.CommandOutputs = append(r.CommandOutputs, result.CommandOutput{Command: cmd.Command, Output: res})
 		if err != nil {
 			fmt.Println(res)
-			fmt.Println(err)
+			// fmt.Println(err)
 		}
 	}
 	r.OK = true
@@ -73,7 +73,7 @@ func auth(conn net.Conn) {
 		{Command: "Juniper", Expect: "#"},
 	}
 	for _, cmd := range commands {
-		result, err := expecter.Expecter(conn, cmd.Command, cmd.Expect, 5000)
+		result, err := expecter.Expecter(conn, cmd.Command, cmd.Expect, 5)
 		if err != nil {
 			fmt.Println(result)
 			fmt.Println(err)
