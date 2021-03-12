@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/automatico/jato/cli"
-	"github.com/automatico/jato/command"
+	"github.com/automatico/jato/connector"
+	"github.com/automatico/jato/credentials"
 	"github.com/automatico/jato/device"
-	"github.com/automatico/jato/user"
+	"github.com/automatico/jato/expecter"
 	"github.com/automatico/jato/utils"
 	"golang.org/x/crypto/ssh"
 )
@@ -23,7 +23,7 @@ import (
 const SSHPort int = 22
 
 // Expect like interface
-func expecter(cmd string, expect string, timeout int, sshIn io.WriteCloser, sshOut io.Reader) string {
+func expecterer(cmd string, expect string, timeout int, sshIn io.WriteCloser, sshOut io.Reader) string {
 	if _, err := writeBuff(cmd, sshIn); err != nil {
 		handleError(err, true, "Failed to run: %s")
 	}
@@ -135,14 +135,14 @@ func createDeviceDir(s string) {
 	}
 }
 
-func runner(u user.User, device device.Device, commands command.Commands) map[string]map[string]string {
+func runner(creds credentials.UserCredentials, device device.Device, commands expecter.CommandExpect) map[string]map[string]string {
 
 	results := make(map[string]string)
 
 	sshConfig := &ssh.ClientConfig{
-		User: u.Username,
+		User: creds.Username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(u.Password),
+			ssh.Password(creds.Password),
 		},
 		// Make this an option
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
@@ -175,8 +175,8 @@ func runner(u user.User, device device.Device, commands command.Commands) map[st
 	}
 	readBuff("#", sshOut, 2)
 
-	for _, cmd := range commands.Commands {
-		results[utils.Underscorer(cmd)] = expecter(cmd, "#", 5, sshIn, sshOut)
+	for _, cmd := range commands.CommandExpect {
+		results[utils.Underscorer(cmd.Command)] = expecterer(cmd.Command, "#", 5, sshIn, sshOut)
 	}
 	session.Close()
 	res := map[string]map[string]string{
@@ -186,20 +186,20 @@ func runner(u user.User, device device.Device, commands command.Commands) map[st
 }
 
 // SSH is the entrypoint to the SSH to a device.
-func SSH(cp cli.Params) {
+func SSH(jt connector.Jato) {
 
 	timeNow := time.Now().Unix()
-	usr := cp.User
-	cmds := cp.Commands
-	devs := cp.Devices
+	crd := jt.UserCredentials
+	cmds := jt.CommandExpect
+	devs := jt.Devices
 
 	results := make(chan map[string]map[string]string)
 	timeout := time.After(10 * time.Second)
 
 	for _, dev := range devs.Devices {
-		go func(u user.User, d device.Device, c command.Commands) {
-			results <- runner(u, d, c)
-		}(usr, dev, cmds)
+		go func(crd credentials.UserCredentials, d device.Device, c expecter.CommandExpect) {
+			results <- runner(crd, d, c)
+		}(crd, dev, cmds)
 	}
 
 	for range devs.Devices {

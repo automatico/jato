@@ -2,14 +2,31 @@ package main
 
 import (
 	"fmt"
+	"html/template"
+	"net"
 	"os"
-	"text/template"
 
 	"github.com/automatico/jato/cli"
+	"github.com/automatico/jato/connector"
 	"github.com/automatico/jato/device"
 	"github.com/automatico/jato/output"
 	"github.com/automatico/jato/telnet"
+	"github.com/automatico/jato/templates"
 )
+
+type Connector interface {
+	Connect() net.Conn
+	Auth()
+}
+
+type Runner interface {
+	Run()
+}
+
+type ConnectorRunner interface {
+	Connector
+	Runner
+}
 
 var telnetDevices []device.Device
 var sshDevices []device.Device
@@ -17,6 +34,29 @@ var sshDevices []device.Device
 func main() {
 
 	cliParams := cli.CLI()
+
+	jt := connector.Jato{
+		UserCredentials: cliParams.Credentials,
+		Devices:         cliParams.Devices,
+		CommandExpect:   cliParams.Commands,
+	}
+
+	// Output data to feed into template
+	data := map[string]interface{}{}
+	data["divider"] = output.Divider("Job Parameters")
+	data["params"] = cliParams
+
+	// CLI output
+	t, err := template.New("output").Parse(templates.CliRunner)
+	if err != nil {
+		panic(err)
+	}
+
+	err = t.Execute(os.Stdout, data)
+
+	if err != nil {
+		panic(err)
+	}
 
 	for _, d := range cliParams.Devices.Devices {
 		switch d.Connector {
@@ -26,17 +66,18 @@ func main() {
 			sshDevices = append(sshDevices, d)
 		}
 	}
+	jt.Devices.Devices = telnetDevices
 
-	if cliParams.NoOp != true {
-		//ssh.SSH(cliParams)
-		results := telnet.Telnet(telnetDevices)
-		t, err := template.New("results").Parse(output.CliResult)
+	if !cliParams.NoOp {
+		// ssh.SSH(cliParams)
+		results := telnet.Telnet(jt)
+		t, err := template.New("results").Parse(templates.CliResult)
 
 		if err != nil {
 			panic(err)
 		}
 
-		fmt.Println(output.JobResult)
+		fmt.Print(output.Divider("Job Results"))
 
 		for _, r := range results.Results {
 			err = t.Execute(os.Stdout, r)
@@ -45,7 +86,6 @@ func main() {
 				panic(err)
 			}
 		}
-
 	}
 
 }

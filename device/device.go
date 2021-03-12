@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+
+	"github.com/automatico/jato/credentials"
 )
 
 // Device represents a managed device
@@ -36,3 +38,5 @@ func LoadDevices(fileName string) Devices {
 
 	return data
 }
+
+func (d Device) Auth(c credentials.UserCredentials) {}
