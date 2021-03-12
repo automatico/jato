@@ -51,6 +51,8 @@ func main() {
 			sshDevices = append(sshDevices, d)
 		}
 	}
+	jt.Devices.Devices = telnetDevices
+	fmt.Println(telnetDevices)
 
 	if !cliParams.NoOp {
 		// ssh.SSH(cliParams)
@@ -70,7 +72,6 @@ func main() {
 				panic(err)
 			}
 		}
-
 	}
 
 }
