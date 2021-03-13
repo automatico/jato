@@ -1,4 +1,4 @@
-package expecter
+package jato
 
 import (
 	"encoding/json"

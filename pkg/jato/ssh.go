@@ -1,4 +1,4 @@
-package ssh
+package jato
 
 import (
 	"bufio"
@@ -11,11 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/automatico/jato/connector"
-	"github.com/automatico/jato/credentials"
-	"github.com/automatico/jato/device"
-	"github.com/automatico/jato/expecter"
-	"github.com/automatico/jato/utils"
+	"github.com/automatico/jato/internal"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -135,7 +131,7 @@ func createDeviceDir(s string) {
 	}
 }
 
-func runner(creds credentials.UserCredentials, device device.Device, commands expecter.CommandExpect) map[string]map[string]string {
+func runnerSSH(creds UserCredentials, device Device, commands CommandExpect) map[string]map[string]string {
 
 	results := make(map[string]string)
 
@@ -176,7 +172,7 @@ func runner(creds credentials.UserCredentials, device device.Device, commands ex
 	readBuff("#", sshOut, 2)
 
 	for _, cmd := range commands.CommandExpect {
-		results[utils.Underscorer(cmd.Command)] = expecterer(cmd.Command, "#", 5, sshIn, sshOut)
+		results[internal.Underscorer(cmd.Command)] = expecterer(cmd.Command, "#", 5, sshIn, sshOut)
 	}
 	session.Close()
 	res := map[string]map[string]string{
@@ -186,7 +182,7 @@ func runner(creds credentials.UserCredentials, device device.Device, commands ex
 }
 
 // SSH is the entrypoint to the SSH to a device.
-func SSH(jt connector.Jato) {
+func SSH(jt Jato) {
 
 	timeNow := time.Now().Unix()
 	crd := jt.UserCredentials
@@ -197,8 +193,8 @@ func SSH(jt connector.Jato) {
 	timeout := time.After(10 * time.Second)
 
 	for _, dev := range devs.Devices {
-		go func(crd credentials.UserCredentials, d device.Device, c expecter.CommandExpect) {
-			results <- runner(crd, d, c)
+		go func(crd UserCredentials, d Device, c CommandExpect) {
+			results <- runnerSSH(crd, d, c)
 		}(crd, dev, cmds)
 	}
 
