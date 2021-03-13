@@ -1,4 +1,4 @@
-package telnet
+package jato
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/automatico/jato/connector"
 	"github.com/automatico/jato/device"
 	"github.com/automatico/jato/expecter"
-	"github.com/automatico/jato/result"
+	"github.com/automatico/jato/pkg/result"
 )
 
 const telnetPort int = 23
@@ -68,6 +68,7 @@ func runner(dev device.Device, commands expecter.CommandExpect) result.Result {
 
 func auth(conn net.Conn) {
 	commands := []command.CommandExpect{
+		{Command: "", Expect: "Username:"},
 		{Command: "", Expect: "Username:"},
 		{Command: "admin", Expect: "Password:"},
 		{Command: "Juniper", Expect: "#"},

@@ -7,11 +7,10 @@ import (
 	"os"
 
 	"github.com/automatico/jato/cli"
-	"github.com/automatico/jato/connector"
-	"github.com/automatico/jato/device"
-	"github.com/automatico/jato/output"
-	"github.com/automatico/jato/telnet"
-	"github.com/automatico/jato/templates"
+	"github.com/automatico/jato/internal/output"
+	"github.com/automatico/jato/internal/templates"
+	"github.com/automatico/jato/pkg/connector"
+	"github.com/automatico/jato/pkg/device"
 )
 
 type Connector interface {
@@ -70,7 +69,7 @@ func main() {
 
 	if !cliParams.NoOp {
 		// ssh.SSH(cliParams)
-		results := telnet.Telnet(jt)
+		results := jato.Telnet(jt)
 		t, err := template.New("results").Parse(templates.CliResult)
 
 		if err != nil {
