@@ -64,7 +64,6 @@ func auth(conn net.Conn) {
 	commands := CommandExpect{
 		[]Expect{
 			{Command: "", Expecting: "Username:", Timeout: 5},
-			{Command: "", Expecting: "Username:", Timeout: 5},
 			{Command: "admin", Expecting: "Password:", Timeout: 5},
 			{Command: "Juniper", Expecting: "#", Timeout: 5},
 		},
