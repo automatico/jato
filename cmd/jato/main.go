@@ -6,11 +6,9 @@ import (
 	"net"
 	"os"
 
-	"github.com/automatico/jato/cli"
-	"github.com/automatico/jato/internal/output"
+	"github.com/automatico/jato/internal"
 	"github.com/automatico/jato/internal/templates"
-	"github.com/automatico/jato/pkg/connector"
-	"github.com/automatico/jato/pkg/device"
+	"github.com/automatico/jato/pkg/jato"
 )
 
 type Connector interface {
@@ -27,14 +25,14 @@ type ConnectorRunner interface {
 	Runner
 }
 
-var telnetDevices []device.Device
-var sshDevices []device.Device
+var telnetDevices []jato.Device
+var sshDevices []jato.Device
 
 func main() {
 
-	cliParams := cli.CLI()
+	cliParams := jato.CLI()
 
-	jt := connector.Jato{
+	jt := jato.Jato{
 		UserCredentials: cliParams.Credentials,
 		Devices:         cliParams.Devices,
 		CommandExpect:   cliParams.Commands,
@@ -42,7 +40,7 @@ func main() {
 
 	// Output data to feed into template
 	data := map[string]interface{}{}
-	data["divider"] = output.Divider("Job Parameters")
+	data["divider"] = internal.Divider("Job Parameters")
 	data["params"] = cliParams
 
 	// CLI output
@@ -76,7 +74,7 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Print(output.Divider("Job Results"))
+		fmt.Print(internal.Divider("Job Results"))
 
 		for _, r := range results.Results {
 			err = t.Execute(os.Stdout, r)

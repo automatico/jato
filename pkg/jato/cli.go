@@ -1,14 +1,11 @@
-package cli
+package jato
 
 import (
 	"flag"
 	"fmt"
 	"os"
 
-	"github.com/automatico/jato/credentials"
-	"github.com/automatico/jato/device"
-	"github.com/automatico/jato/expecter"
-	"github.com/automatico/jato/utils"
+	"github.com/automatico/jato/internal"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -16,9 +13,9 @@ const version = "2021.02.02"
 
 // Params contain the result of CLI input
 type Params struct {
-	Credentials credentials.UserCredentials
-	Devices     device.Devices
-	Commands    expecter.CommandExpect
+	Credentials UserCredentials
+	Devices     Devices
+	Commands    CommandExpect
 	NoOp        bool
 }
 
@@ -40,7 +37,7 @@ func CLI() Params {
 	// Used to collect CLI parameters
 	params := Params{}
 
-	userCreds := credentials.UserCredentials{}.Load()
+	userCreds := UserCredentials{}.Load()
 
 	// User
 	params.Credentials = userCreds
@@ -70,12 +67,12 @@ func CLI() Params {
 	}
 
 	// Devices
-	utils.FileStat(*devicesPtr)
-	params.Devices = device.LoadDevices(*devicesPtr)
+	internal.FileStat(*devicesPtr)
+	params.Devices = LoadDevices(*devicesPtr)
 
 	// Commands
-	utils.FileStat(*commandsPtr)
-	params.Commands = expecter.LoadCommands(*commandsPtr)
+	internal.FileStat(*commandsPtr)
+	params.Commands = LoadCommands(*commandsPtr)
 
 	// No Op
 	params.NoOp = *noOpPtr
