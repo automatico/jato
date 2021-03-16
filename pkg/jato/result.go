@@ -1,4 +1,4 @@
-package result
+package jato
 
 // CommandOutput holds the output of commands run
 type CommandOutput struct {
