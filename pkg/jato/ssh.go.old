@@ -1,4 +1,4 @@
-package jato
+package blahblah
 
 import (
 	"bufio"
@@ -69,7 +69,7 @@ func handleError(e error, fatal bool, customMessage ...string) {
 		} else {
 			errorMessage = "%s"
 		}
-		if fatal {
+		if fatal == true {
 			log.Fatalf(errorMessage, e)
 		} else {
 			log.Print(errorMessage, e)

@@ -5,6 +5,11 @@ type Connector interface {
 	Connect()
 }
 
+type NetDevice interface {
+	Connect()
+	DisablePaging()
+}
+
 type Jato struct {
 	UserCredentials
 	Devices

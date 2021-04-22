@@ -27,7 +27,7 @@ type CommandExpect struct {
 	CommandExpect []Expect `json:"command_expect"`
 }
 
-// Expecter takes a connect, command and string.
+// Expecter takes a connection, command and string.
 // It runs the command against the connection and
 // returns the result
 func Expecter(connection net.Conn, command string, expecting string, timeout int64) (string, error) {
