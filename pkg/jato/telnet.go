@@ -2,90 +2,92 @@ package jato
 
 import (
 	"fmt"
+	"io"
 	"net"
+	"strings"
+	"sync"
 	"time"
+
+	"github.com/automatico/jato/internal"
 )
 
-const telnetPort int = 23
+func TelnetExpecter(connection net.Conn, command string, expecting string, timeout int64) (string, error) {
+	// How long to wait for response from device
+	// before we give up and consider it timed out.
+	countdown := time.Duration(timeout) * time.Second
 
-// Telnet to a device
-func Telnet(jt Jato) Results {
-	commands := jt.CommandExpect
+	// Big buffer holds the result
+	result := make([]byte, 0, 4096)
+	// Used to read characters into queue
+	tmp := make([]byte, 1)
 
-	results := Results{}
-	chanResult := make(chan Result)
-	for _, dev := range jt.Devices.Devices {
-		go func(d Device, c CommandExpect) {
-			chanResult <- telnetRunner(d, c)
-		}(dev, commands)
-	}
+	// Holds number of characters equal to maxQueueLength for
+	// matching the expect string
+	queue := []string{}
+	maxQueueLength := len(expecting)
 
-	for range jt.Devices.Devices {
-		select {
-		case res := <-chanResult:
-			results.Results = append(results.Results, res)
-			// fmt.Println(res)
-		case <-time.After(6 * time.Second):
-			fmt.Println("Timed out!")
+	// Send command to device
+	fmt.Fprintf(connection, command+"\n")
+
+	for {
+		// Set timeout for reading from device
+		connection.SetReadDeadline(time.Now().Add(countdown))
+
+		n, err := connection.Read(tmp)
+		if err != nil {
+			if err == io.EOF {
+				break // Reached the end of file
+			}
+			return "read error", err
 		}
+
+		result = append(result, tmp[:n]...)
+
+		if maxQueueLength == 1 && string(tmp) == expecting {
+			// Your done, exit the loop
+			break
+		} else if len(queue) == maxQueueLength {
+			// Queue is full, check for expecting string
+			if strings.Join(queue, "") == expecting {
+				// Your done, exit the loop
+				break
+			} else {
+				// Pop the front elememnt and shift the rest of the
+				// elements left
+				_, queue = queue[0], queue[1:]
+				// Add element to the end of the queue
+				queue = append(queue, string(tmp))
+			}
+		} else {
+			// Queue is not full, so add elements to queue
+			queue = append(queue, string(tmp))
+		}
+
 	}
-	return results
+	return string(result), nil
 }
 
-func telnetRunner(dev Device, commands CommandExpect) Result {
-	timeNow := time.Now().Unix()
-	r := Result{}
-	r.Device = dev.Name
-	r.Timestamp = timeNow
-
-	// fmt.Println("DIALING")
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", dev.IP, telnetPort))
-	if err != nil {
-		fmt.Println("dial error:", err)
-		r.OK = false
-		return r
-	}
+func TelnetRunner(nd NetDevice, commands []string, ch chan Result, wg *sync.WaitGroup) {
+	conn := nd.ConnectWithTelnet()
 	defer conn.Close()
-	// fmt.Println("FINISHED DIALING")
+	defer wg.Done()
 
-	auth(conn)
+	result := Result{}
+	cmdOut := []CommandOutput{}
 
-	for _, cmd := range commands.CommandExpect {
-		res, err := Expecter(conn, cmd.Command, cmd.Expecting, cmd.Timeout)
-		r.CommandOutputs = append(r.CommandOutputs, CommandOutput{Command: cmd.Command, Output: res})
+	result.Device = nd.Name
+	result.Timestamp = time.Now().Unix()
+	for _, command := range commands {
+		res, err := TelnetExpecter(conn, command, "#", 5)
 		if err != nil {
-			fmt.Println(res)
-			fmt.Println(err)
+			result.OK = false
+			ch <- result
+			return
 		}
+		out := CommandOutput{Command: internal.Underscorer(command), Output: res}
+		cmdOut = append(cmdOut, out)
 	}
-
-	theTimeNow := time.Now().Unix()
-	// fmt.Println(theTimeNow)
-	// fmt.Println(timeNow + 5)
-	if theTimeNow > timeNow+5 {
-		// Consider the device timed out sending commands
-		// fmt.Println("Timeout waiting for commands")
-		r.OK = false
-		r.Error = "timeout sending commands"
-	} else {
-		r.OK = true
-	}
-	return r
-}
-
-func auth(conn net.Conn) {
-	commands := CommandExpect{
-		[]Expect{
-			{Command: "", Expecting: "Username:", Timeout: 2},
-			{Command: "admin", Expecting: "Password:", Timeout: 2},
-			{Command: "Juniper", Expecting: "#", Timeout: 2},
-		},
-	}
-	for _, cmd := range commands.CommandExpect {
-		result, err := Expecter(conn, cmd.Command, cmd.Expecting, cmd.Timeout)
-		if err != nil {
-			fmt.Println(result)
-			fmt.Println(err)
-		}
-	}
+	result.CommandOutputs = cmdOut
+	result.OK = true
+	ch <- result
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"net"
 	"os"
 
 	"github.com/automatico/jato/internal"
@@ -11,18 +10,10 @@ import (
 	"github.com/automatico/jato/pkg/jato"
 )
 
-type Connector interface {
-	Connect() net.Conn
-	Auth()
-}
-
-type Runner interface {
-	Run()
-}
-
-type ConnectorRunner interface {
-	Connector
-	Runner
+type Jato struct {
+	jato.Credentials
+	jato.Devices
+	jato.CommandExpect
 }
 
 var telnetDevices []jato.Device
@@ -32,10 +23,10 @@ func main() {
 
 	cliParams := jato.CLI()
 
-	jt := jato.Jato{
-		UserCredentials: cliParams.Credentials,
-		Devices:         cliParams.Devices,
-		CommandExpect:   cliParams.Commands,
+	jt := Jato{
+		Credentials:   cliParams.Credentials,
+		Devices:       cliParams.Devices,
+		CommandExpect: cliParams.Commands,
 	}
 
 	// Output data to feed into template

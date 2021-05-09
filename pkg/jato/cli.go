@@ -13,7 +13,7 @@ const version = "2021.02.02"
 
 // Params contain the result of CLI input
 type Params struct {
-	Credentials UserCredentials
+	Credentials Credentials
 	Devices     Devices
 	Commands    CommandExpect
 	NoOp        bool
@@ -37,7 +37,7 @@ func CLI() Params {
 	// Used to collect CLI parameters
 	params := Params{}
 
-	userCreds := UserCredentials{}.Load()
+	userCreds := Credentials{}.Load()
 
 	// User
 	params.Credentials = userCreds
