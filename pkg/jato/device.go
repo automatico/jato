@@ -19,7 +19,7 @@ type Device struct {
 
 // Devices holds a collection of Device structs
 type Devices struct {
-	Devices []Device `json:"devices"`
+	Devices []NetDevice `json:"devices"`
 }
 
 type TelnetParams struct {
@@ -45,7 +45,10 @@ type NetDevice struct {
 }
 
 func (nd NetDevice) ConnectWithTelnet() net.Conn {
-
+	const telnetPort = 23
+	if nd.TelnetParams.Port == 0 {
+		nd.TelnetParams.Port = telnetPort
+	}
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", nd.IP, nd.TelnetParams.Port))
 	if err != nil {
 		fmt.Println("dial error:", err)

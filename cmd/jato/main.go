@@ -4,26 +4,21 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"sync"
 
 	"github.com/automatico/jato/internal"
 	"github.com/automatico/jato/internal/templates"
 	"github.com/automatico/jato/pkg/jato"
 )
 
-type Jato struct {
-	jato.Credentials
-	jato.Devices
-	jato.CommandExpect
-}
-
-var telnetDevices []jato.Device
-var sshDevices []jato.Device
+var telnetDevices []jato.NetDevice
+var sshDevices []jato.NetDevice
 
 func main() {
 
 	cliParams := jato.CLI()
 
-	jt := Jato{
+	jt := jato.Jato{
 		Credentials:   cliParams.Credentials,
 		Devices:       cliParams.Devices,
 		CommandExpect: cliParams.Commands,
@@ -57,17 +52,36 @@ func main() {
 	jt.Devices.Devices = telnetDevices
 
 	if !cliParams.NoOp {
-		// ssh.SSH(cliParams)
-		results := jato.Telnet(jt)
-		t, err := template.New("results").Parse(templates.CliResult)
 
+		results := []jato.Result{}
+
+		var wg sync.WaitGroup
+		ch := make(chan jato.Result)
+		defer close(ch)
+
+		// ssh.SSH(cliParams)
+		wg.Add(len(telnetDevices))
+		for _, dev := range telnetDevices {
+			dev.Credentials.Username = jt.Credentials.Username
+			dev.Credentials.Password = jt.Credentials.Password
+			go jato.TelnetRunner(dev, jt.CommandExpect, ch, &wg)
+		}
+
+		devTotal := len(telnetDevices)
+		for i := 0; i < devTotal; i++ {
+			results = append(results, <-ch)
+		}
+
+		wg.Wait()
+
+		t, err := template.New("results").Parse(templates.CliResult)
 		if err != nil {
 			panic(err)
 		}
 
 		fmt.Print(internal.Divider("Job Results"))
 
-		for _, r := range results.Results {
+		for _, r := range results {
 			err = t.Execute(os.Stdout, r)
 
 			if err != nil {

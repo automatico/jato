@@ -1,7 +1,6 @@
 package jato
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -11,7 +10,7 @@ import (
 	"github.com/automatico/jato/internal"
 )
 
-func TelnetExpecter(connection net.Conn, command string, expecting string, timeout int64) (string, error) {
+func TelnetExpecter(conn net.Conn, cmd string, expecting string, timeout int64) (string, error) {
 	// How long to wait for response from device
 	// before we give up and consider it timed out.
 	countdown := time.Duration(timeout) * time.Second
@@ -27,13 +26,14 @@ func TelnetExpecter(connection net.Conn, command string, expecting string, timeo
 	maxQueueLength := len(expecting)
 
 	// Send command to device
-	fmt.Fprintf(connection, command+"\n")
+	// fmt.Fprintf(conn, cmd+"\n")
+	conn.Write([]byte(cmd + "\n"))
 
 	for {
 		// Set timeout for reading from device
-		connection.SetReadDeadline(time.Now().Add(countdown))
+		conn.SetReadDeadline(time.Now().Add(countdown))
 
-		n, err := connection.Read(tmp)
+		n, err := conn.Read(tmp)
 		if err != nil {
 			if err == io.EOF {
 				break // Reached the end of file
@@ -67,7 +67,7 @@ func TelnetExpecter(connection net.Conn, command string, expecting string, timeo
 	return string(result), nil
 }
 
-func TelnetRunner(nd NetDevice, commands []string, ch chan Result, wg *sync.WaitGroup) {
+func TelnetRunner(nd NetDevice, ce CommandExpect, ch chan Result, wg *sync.WaitGroup) {
 	conn := nd.ConnectWithTelnet()
 	defer conn.Close()
 	defer wg.Done()
@@ -77,14 +77,14 @@ func TelnetRunner(nd NetDevice, commands []string, ch chan Result, wg *sync.Wait
 
 	result.Device = nd.Name
 	result.Timestamp = time.Now().Unix()
-	for _, command := range commands {
-		res, err := TelnetExpecter(conn, command, "#", 5)
+	for _, cmd := range ce.CommandExpect {
+		res, err := TelnetExpecter(conn, cmd.Command, cmd.Expecting, cmd.Timeout)
 		if err != nil {
 			result.OK = false
 			ch <- result
 			return
 		}
-		out := CommandOutput{Command: internal.Underscorer(command), Output: res}
+		out := CommandOutput{Command: internal.Underscorer(cmd.Command), Output: res}
 		cmdOut = append(cmdOut, out)
 	}
 	result.CommandOutputs = cmdOut
