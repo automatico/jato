@@ -44,9 +44,9 @@ func LoadDevices(fileName string) Devices {
 
 // Write the output from commands run against
 // devices to a plain text file
-func WriteToFile(timestamp int64, results Results) {
+func WriteToFile(timestamp int64, results []Result) {
 	outdir := "data"
-	for _, result := range results.Results {
+	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))
 		file, err := os.OpenFile(fmt.Sprintf("%s/%s/%d.raw", outdir, result.Device, timestamp), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -66,9 +66,9 @@ func WriteToFile(timestamp int64, results Results) {
 
 // Write the output from commands run against
 // devices to a json file
-func WriteToJSONFile(timestamp int64, results Results) {
+func WriteToJSONFile(timestamp int64, results []Result) {
 	outdir := "data"
-	for _, result := range results.Results {
+	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))
 		file, _ := json.MarshalIndent(result.Device, "", " ")
 		_ = ioutil.WriteFile(fmt.Sprintf("%s/%s/%d.json", outdir, result.Device, timestamp), file, 0644)

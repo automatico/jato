@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/automatico/jato/internal"
 	"github.com/automatico/jato/internal/templates"
@@ -15,6 +16,8 @@ var telnetDevices []jato.NetDevice
 var sshDevices []jato.NetDevice
 
 func main() {
+
+	timeNow := time.Now().Unix()
 
 	cliParams := jato.CLI()
 
@@ -88,6 +91,8 @@ func main() {
 				panic(err)
 			}
 		}
+		jato.WriteToFile(timeNow, results)
+		jato.WriteToJSONFile(timeNow, results)
 	}
 
 }
