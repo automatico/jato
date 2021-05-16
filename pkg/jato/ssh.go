@@ -34,7 +34,7 @@ func SSHClientConfig(username string, password string, insecureConnection bool, 
 }
 
 // Expect like interface
-func SSHExpecter(sshConn SSHConnection, cmd string, expect string, timeout int) (string, error) {
+func SSHExpecter(sshConn SSHConnection, cmd string, expect string, timeout int64) (string, error) {
 	if _, err := writeBuff(cmd, sshConn.StdIn); err != nil {
 		return "", err
 	}
@@ -60,7 +60,7 @@ func readBuffForString(expect string, stdOut io.Reader, buffRead chan<- string) 
 	buffRead <- tmp
 }
 
-func readBuff(expect string, stdOut io.Reader, timeout int) string {
+func readBuff(expect string, stdOut io.Reader, timeout int64) string {
 	ch := make(chan string)
 
 	go func(expect string, stdOut io.Reader) {
@@ -85,7 +85,7 @@ func writeBuff(cmd string, stdIn io.WriteCloser) (int, error) {
 	return returnCode, err
 }
 
-func SSHRunner(nd NetDevice, commands []string, ch chan Result, wg *sync.WaitGroup) {
+func SSHRunner(nd NetDevice, ce CommandExpect, ch chan Result, wg *sync.WaitGroup) {
 
 	conn := nd.ConnectWithSSH()
 	defer conn.Session.Close()
@@ -96,14 +96,14 @@ func SSHRunner(nd NetDevice, commands []string, ch chan Result, wg *sync.WaitGro
 
 	result.Device = nd.Name
 	result.Timestamp = time.Now().Unix()
-	for _, command := range commands {
-		res, err := SSHExpecter(conn, command, "#", 5)
+	for _, cmd := range ce.CommandExpect {
+		res, err := SSHExpecter(conn, cmd.Command, cmd.Expecting, cmd.Timeout)
 		if err != nil {
 			result.OK = false
 			ch <- result
 			return
 		}
-		out := CommandOutput{Command: internal.Underscorer(command), Output: res}
+		out := CommandOutput{Command: internal.Underscorer(cmd.Command), Output: res}
 		cmdOut = append(cmdOut, out)
 	}
 	result.CommandOutputs = cmdOut

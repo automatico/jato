@@ -67,10 +67,14 @@ func WriteToFile(timestamp int64, results []Result) {
 // Write the output from commands run against
 // devices to a json file
 func WriteToJSONFile(timestamp int64, results []Result) {
+	// fmt.Println("########################")
+	// fmt.Println(results)
+	// fmt.Println("########################")
+
 	outdir := "data"
 	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))
-		file, _ := json.MarshalIndent(result.Device, "", " ")
+		file, _ := json.MarshalIndent(result, "", " ")
 		_ = ioutil.WriteFile(fmt.Sprintf("%s/%s/%d.json", outdir, result.Device, timestamp), file, 0644)
 		fmt.Printf("Saved JSON output: %s\n", result.Device)
 	}

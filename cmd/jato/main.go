@@ -70,7 +70,18 @@ func main() {
 			go jato.TelnetRunner(dev, jt.CommandExpect, ch, &wg)
 		}
 
-		devTotal := len(telnetDevices)
+		wg.Add(len(sshDevices))
+		for _, dev := range sshDevices {
+			dev.Credentials.Username = jt.Credentials.Username
+			dev.Credentials.Password = jt.Credentials.Password
+			dev.SSHParams.Port = 22
+			dev.SSHParams.InsecureConnection = true
+			dev.SSHParams.InsecureCyphers = true
+			fmt.Println(dev)
+			go jato.SSHRunner(dev, jt.CommandExpect, ch, &wg)
+		}
+
+		devTotal := len(telnetDevices) + len(sshDevices)
 		for i := 0; i < devTotal; i++ {
 			results = append(results, <-ch)
 		}
@@ -91,6 +102,7 @@ func main() {
 				panic(err)
 			}
 		}
+
 		jato.WriteToFile(timeNow, results)
 		jato.WriteToJSONFile(timeNow, results)
 	}
