@@ -77,7 +77,6 @@ func main() {
 			dev.SSHParams.Port = 22
 			dev.SSHParams.InsecureConnection = true
 			dev.SSHParams.InsecureCyphers = true
-			fmt.Println(dev)
 			go jato.SSHRunner(dev, jt.CommandExpect, ch, &wg)
 		}
 
