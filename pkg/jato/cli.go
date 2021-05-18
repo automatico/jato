@@ -9,7 +9,7 @@ import (
 	"golang.org/x/term"
 )
 
-const version = "2021.02.02"
+const version = "2021.05.01"
 
 type Jato struct {
 	Credentials
