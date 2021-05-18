@@ -9,29 +9,29 @@ Create environment variables
 ### Linux
 Place this in your environments `rc` file
 ```
-export JATO_SSH_USER="USERNAME"
-export JATO_SSH_PASS="PASSWORD"
+export JATO_USERNAME="USERNAME"
+export JATO_PASSWORD="PASSWORD"
 ```
 
 ### Windows
 In an elevated Powershell / Command prompt
 ```
-setx JATO_SSH_USER "USERNAME"
-setx JATO_SSH_PASS "PASSWORD"
+setx JATO_USERNAME "USERNAME"
+setx JATO_PASSWORD "PASSWORD"
 ```
 
 ### Commands
 Create a `commands.json` file with the list of commands to run
 ```json
 {
-  "commands": [
-    "terminal length 0",
-    "show version",
-    "show ip interface brief",
-    "show ip arp",
-    "show cdp neighbors",
-    "show running-config",
-    "exit"
+  "command_expect": [
+    {"command": "terminal length 0", "expecting": "#", "timeout": 5},
+    {"command": "show version", "expecting": "#", "timeout": 5},
+    {"command": "show ip interface brief", "expecting": "#", "timeout": 5},
+    {"command": "show ip arp", "expecting": "#", "timeout": 5},
+    {"command": "show cdp neighbors", "expecting": "#", "timeout": 5},
+    {"command": "show running-config", "expecting": "#", "timeout": 5},
+    {"command": "exit", "expecting": "#", "timeout": 5}
   ]
 }
 ```
@@ -41,11 +41,14 @@ Create a `devices.json` file with a list of devices to run against
 ```json
 {
   "devices": [
-    {"name": "192.168.255.150", "vendor": "cisco", "platform": "ios"},
-    {"name": "192.168.255.154", "vendor": "cisco", "platform": "ios"},
-    {"name": "192.168.255.155", "vendor": "cisco", "platform": "ios"},
-    {"name": "192.168.255.156", "vendor": "cisco", "platform": "ios"},
-    {"name": "192.168.255.157", "vendor": "cisco", "platform": "ios"}
+    {"name": "iosv-1", "ip": "192.168.255.150", "vendor": "cisco", "platform": "ios", "connector": "telnet"},
+    {"name": "iosv-4", "ip": "192.168.255.154", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
+    {"name": "iosv-5", "ip": "192.168.255.155", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
+    {"name": "iosv-6", "ip": "192.168.255.156", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
+    {"name": "iosv-7", "ip": "192.168.255.157", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
+    {"name": "iosv-8", "ip": "192.168.255.158", "vendor": "cisco", "platform": "ios", "connector": "telnet"},
+    {"name": "iosv-9", "ip": "192.168.255.159", "vendor": "cisco", "platform": "ios", "connector": "telnet"},
+    {"name": "iosv-10", "ip": "192.168.255.160", "vendor": "cisco", "platform": "ios", "connector": "telnet"}
   ]
 }
 ```
@@ -66,7 +69,7 @@ Usage of jato:
         Devices inventory file (default "devices.json")
   -p    Ask for user password
   -u string
-        Username to connect to devices with (default "JATO_SSH_USER environment variable")
+        Username to connect to devices with (default "JATO_USERNAME environment variable")
 ```
 
 Run a series of commands against N number of devices.
