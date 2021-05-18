@@ -6,14 +6,20 @@ import (
 	"os"
 
 	"github.com/automatico/jato/internal"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
-const version = "2021.02.02"
+const version = "2021.05.01"
+
+type Jato struct {
+	Credentials
+	Devices
+	CommandExpect
+}
 
 // Params contain the result of CLI input
 type Params struct {
-	Credentials UserCredentials
+	Credentials Credentials
 	Devices     Devices
 	Commands    CommandExpect
 	NoOp        bool
@@ -37,7 +43,7 @@ func CLI() Params {
 	// Used to collect CLI parameters
 	params := Params{}
 
-	userCreds := UserCredentials{}.Load()
+	userCreds := Credentials{}.Load()
 
 	// User
 	params.Credentials = userCreds
@@ -84,18 +90,18 @@ func CLI() Params {
 func promptSecret(question string) (string, error) {
 	fmt.Printf(question + "\n> ")
 
-	raw, err := terminal.MakeRaw(0)
+	raw, err := term.MakeRaw(0)
 	if err != nil {
 		return "", err
 	}
-	defer terminal.Restore(0, raw)
+	defer term.Restore(0, raw)
 
 	var (
 		prompt string
 		answer string
 	)
 
-	term := terminal.NewTerminal(os.Stdin, prompt)
+	term := term.NewTerminal(os.Stdin, prompt)
 	for {
 		char, err := term.ReadPassword(prompt)
 		if err != nil {

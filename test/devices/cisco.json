@@ -1,6 +1,6 @@
 {
   "devices": [
-    {"name": "iosv-1", "ip": "192.168.255.150", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
+    {"name": "iosv-1", "ip": "192.168.255.150", "vendor": "cisco", "platform": "ios", "connector": "telnet"},
     {"name": "iosv-4", "ip": "192.168.255.154", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
     {"name": "iosv-5", "ip": "192.168.255.155", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
     {"name": "iosv-6", "ip": "192.168.255.156", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
