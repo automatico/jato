@@ -9,19 +9,19 @@ import (
 	"golang.org/x/term"
 )
 
-const version = "2021.05.01"
+const version = "2021.06.01"
 
 type Jato struct {
 	Credentials
 	Devices
-	CommandExpect
+	Commands
 }
 
 // Params contain the result of CLI input
 type Params struct {
 	Credentials Credentials
 	Devices     Devices
-	Commands    CommandExpect
+	Commands    Commands
 	NoOp        bool
 }
 

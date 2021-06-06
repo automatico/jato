@@ -58,21 +58,15 @@ func main() {
 		ch := make(chan jato.Result)
 		defer close(ch)
 
-		commands := []string{
-			"show version",
-			"show running-config",
-			"show ip interface brief",
-		}
-
 		// ssh.SSH(cliParams)
 		wg.Add(len(ciscoIOSDevices))
 		for _, dev := range ciscoIOSDevices {
 			dev := dev // lock the host or the same host can run more than once
 			dev.Init()
 			if dev.Connector == "telnet" {
-				go jato.RunWithTelnet(&dev, commands, ch, &wg)
+				go jato.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
 			} else if dev.Connector == "ssh" {
-				go jato.RunWithSSH(&dev, commands, ch, &wg)
+				go jato.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
 			}
 		}
 

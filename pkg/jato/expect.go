@@ -17,4 +17,6 @@ type CommandExpect struct {
 }
 
 // Commands hosts a slice of commands
-type Commands []string
+type Commands struct {
+	Commands []string `json:"commands"`
+}
