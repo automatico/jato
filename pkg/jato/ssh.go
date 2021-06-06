@@ -3,7 +3,7 @@ package jato
 import (
 	"fmt"
 	"io"
-	"strings"
+	"regexp"
 	"sync"
 	"time"
 
@@ -11,10 +11,27 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type SSHConnection struct {
+var (
+	SSHPort int = 22
+)
+
+type SSHParams struct {
+	Port               int
+	InsecureConnection bool
+	InsecureCyphers    bool
+}
+
+type SSHConn struct {
 	Session *ssh.Session
-	StdIn   io.WriteCloser
+	StdIn   io.Writer
 	StdOut  io.Reader
+}
+
+type SSHDevice interface {
+	Init()
+	ConnectWithSSH() error
+	SendCommandsWithSSH([]string) Result
+	DisconnectSSH() error
 }
 
 func SSHClientConfig(username string, password string, insecureConnection bool, insecureCyphers bool) *ssh.ClientConfig {
@@ -33,41 +50,67 @@ func SSHClientConfig(username string, password string, insecureConnection bool, 
 	return config
 }
 
-// Expect like interface
-func SSHExpecter(sshConn SSHConnection, cmd string, expect string, timeout int64) (string, error) {
-	if _, err := writeBuff(cmd, sshConn.StdIn); err != nil {
-		return "", err
-	}
-	result := readBuff(expect, sshConn.StdOut, timeout)
+func SendCommandsWithSSH(conn SSHConn, commands []string, expect *regexp.Regexp, timeout int64) ([]CommandOutput, error) {
 
-	return result, nil
+	cmdOut := []CommandOutput{}
+
+	for _, cmd := range commands {
+		res, err := SendCommandWithSSH(conn, cmd, expect, timeout)
+		if err != nil {
+			return cmdOut, err
+		}
+		cmdOut = append(cmdOut, res)
+	}
+
+	return cmdOut, nil
+
 }
 
-func readBuffForString(expect string, stdOut io.Reader, buffRead chan<- string) {
-	buf := make([]byte, 4096)
-	n, err := stdOut.Read(buf) //this reads the ssh terminal
-	tmp := ""
-	if err == nil {
-		tmp = string(buf[:n])
+func SendCommandWithSSH(conn SSHConn, cmd string, expect *regexp.Regexp, timeout int64) (CommandOutput, error) {
+	cmdOut := CommandOutput{}
+
+	_, err := writeSSH(conn.StdIn, cmd)
+	time.Sleep(time.Millisecond * 3)
+
+	res := readSSH(conn.StdOut, expect, timeout)
+	if err != nil {
+		return cmdOut, err
 	}
-	for (err == nil) && (!strings.Contains(tmp, expect)) {
-		n, err = stdOut.Read(buf)
-		tmp += string(buf[:n])
-		// Uncommenting this might help you debug if you are coming into
-		// errors with timeouts when correct details entered
-		// fmt.Println(tmp)
-	}
-	buffRead <- tmp
+
+	cmdOut.Command = internal.Underscorer(cmd)
+	cmdOut.Output = res
+
+	return cmdOut, nil
 }
 
-func readBuff(expect string, stdOut io.Reader, timeout int64) string {
+func writeSSH(stdIn io.Writer, cmd string) (int, error) {
+	i, err := stdIn.Write([]byte(cmd + "\r"))
+	return i, err
+}
+
+func readSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 	ch := make(chan string)
 
-	go func(expect string, stdOut io.Reader) {
+	go func(stdOut io.Reader, expect *regexp.Regexp) {
 
 		buffRead := make(chan string)
 
-		go readBuffForString(expect, stdOut, buffRead)
+		go func(r io.Reader, exp *regexp.Regexp, br chan<- string) {
+			buf := make([]byte, 8192)
+			n, err := r.Read(buf) //this reads the ssh terminal
+			tmp := ""
+			if err == nil {
+				tmp = string(buf[:n])
+			}
+			for (err == nil) && !exp.MatchString(tmp) {
+				n, err = r.Read(buf)
+				tmp += string(buf[:n])
+				// Uncommenting this might help you debug if you are coming into
+				// errors with timeouts when correct details entered
+				// fmt.Println(tmp)
+			}
+			br <- tmp
+		}(stdOut, expect, buffRead)
 
 		select {
 		case ret := <-buffRead:
@@ -75,38 +118,20 @@ func readBuff(expect string, stdOut io.Reader, timeout int64) string {
 		case <-time.After(time.Duration(timeout) * time.Second):
 			fmt.Printf("Waiting for '%s' took longer than timeout: %d\n", expect, timeout)
 		}
-	}(expect, stdOut)
+	}(stdOut, expect)
 
 	return <-ch
 }
 
-func writeBuff(cmd string, stdIn io.WriteCloser) (int, error) {
-	returnCode, err := stdIn.Write([]byte(cmd + "\r"))
-	return returnCode, err
-}
-
-func SSHRunner(nd NetDevice, ce CommandExpect, ch chan Result, wg *sync.WaitGroup) {
-
-	conn := nd.ConnectWithSSH()
-	defer conn.Session.Close()
+func RunWithSSH(sd SSHDevice, commands []string, ch chan Result, wg *sync.WaitGroup) {
+	err := sd.ConnectWithSSH()
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer sd.DisconnectSSH()
 	defer wg.Done()
 
-	result := Result{}
-	cmdOut := []CommandOutput{}
+	result := sd.SendCommandsWithSSH(commands)
 
-	result.Device = nd.Name
-	result.Timestamp = time.Now().Unix()
-	for _, cmd := range ce.CommandExpect {
-		res, err := SSHExpecter(conn, cmd.Command, cmd.Expecting, cmd.Timeout)
-		if err != nil {
-			result.OK = false
-			ch <- result
-			return
-		}
-		out := CommandOutput{Command: internal.Underscorer(cmd.Command), Output: res}
-		cmdOut = append(cmdOut, out)
-	}
-	result.CommandOutputs = cmdOut
-	result.OK = true
 	ch <- result
 }

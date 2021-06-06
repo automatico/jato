@@ -9,13 +9,13 @@ import (
 	"os"
 )
 
-func LoadCommands(fileName string) CommandExpect {
+func LoadCommands(fileName string) Commands {
 	file, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data := CommandExpect{}
+	data := Commands{}
 
 	err = json.Unmarshal([]byte(file), &data)
 	if err != nil {

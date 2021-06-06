@@ -20,8 +20,8 @@ Devices:
 {{- end }}
 
 Commands:
-{{- range .params.Commands.CommandExpect}}
-  - {{.Command}}
+{{- range .params.Commands.Commands}}
+  - {{.}}
 {{- end }}
 {{/* SPACE */}}
 `

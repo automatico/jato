@@ -12,20 +12,13 @@ import (
 	"github.com/automatico/jato/pkg/jato"
 )
 
-var telnetDevices []jato.NetDevice
-var sshDevices []jato.NetDevice
+var ciscoIOSDevices []jato.CiscoIOSDevice
 
 func main() {
 
 	timeNow := time.Now().Unix()
 
 	cliParams := jato.CLI()
-
-	jt := jato.Jato{
-		Credentials:   cliParams.Credentials,
-		Devices:       cliParams.Devices,
-		CommandExpect: cliParams.Commands,
-	}
 
 	// Output data to feed into template
 	data := map[string]interface{}{}
@@ -45,14 +38,17 @@ func main() {
 	}
 
 	for _, d := range cliParams.Devices.Devices {
-		switch d.Connector {
-		case "telnet":
-			telnetDevices = append(telnetDevices, d)
-		case "ssh":
-			sshDevices = append(sshDevices, d)
+		d.Credentials.Username = cliParams.Credentials.Username
+		d.Credentials.Password = cliParams.Credentials.Password
+		d.Credentials.SuperPassword = cliParams.Credentials.SuperPassword
+		d.Credentials.SSHKeyFile = cliParams.Credentials.SSHKeyFile
+		if d.Vendor == "cisco" {
+			if d.Platform == "ios" {
+				cd := jato.NetToCiscoIOSDevice(d)
+				ciscoIOSDevices = append(ciscoIOSDevices, cd)
+			}
 		}
 	}
-	jt.Devices.Devices = telnetDevices
 
 	if !cliParams.NoOp {
 
@@ -63,24 +59,18 @@ func main() {
 		defer close(ch)
 
 		// ssh.SSH(cliParams)
-		wg.Add(len(telnetDevices))
-		for _, dev := range telnetDevices {
-			dev.Credentials.Username = jt.Credentials.Username
-			dev.Credentials.Password = jt.Credentials.Password
-			go jato.TelnetRunner(dev, jt.CommandExpect, ch, &wg)
+		wg.Add(len(ciscoIOSDevices))
+		for _, dev := range ciscoIOSDevices {
+			dev := dev // lock the host or the same host can run more than once
+			dev.Init()
+			if dev.Connector == "telnet" {
+				go jato.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
+			} else if dev.Connector == "ssh" {
+				go jato.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			}
 		}
 
-		wg.Add(len(sshDevices))
-		for _, dev := range sshDevices {
-			dev.Credentials.Username = jt.Credentials.Username
-			dev.Credentials.Password = jt.Credentials.Password
-			dev.SSHParams.Port = 22
-			dev.SSHParams.InsecureConnection = true
-			dev.SSHParams.InsecureCyphers = true
-			go jato.SSHRunner(dev, jt.CommandExpect, ch, &wg)
-		}
-
-		devTotal := len(telnetDevices) + len(sshDevices)
+		devTotal := len(ciscoIOSDevices)
 		for i := 0; i < devTotal; i++ {
 			results = append(results, <-ch)
 		}
