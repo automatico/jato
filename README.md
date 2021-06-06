@@ -24,14 +24,12 @@ setx JATO_PASSWORD "PASSWORD"
 Create a `commands.json` file with the list of commands to run
 ```json
 {
-  "command_expect": [
-    {"command": "terminal length 0", "expecting": "#", "timeout": 5},
-    {"command": "show version", "expecting": "#", "timeout": 5},
-    {"command": "show ip interface brief", "expecting": "#", "timeout": 5},
-    {"command": "show ip arp", "expecting": "#", "timeout": 5},
-    {"command": "show cdp neighbors", "expecting": "#", "timeout": 5},
-    {"command": "show running-config", "expecting": "#", "timeout": 5},
-    {"command": "exit", "expecting": "#", "timeout": 5}
+  "commands": [
+    "show version",
+    "show ip interface brief",
+    "show ip arp",
+    "show cdp neighbors",
+    "show running-config"
   ]
 }
 ```
