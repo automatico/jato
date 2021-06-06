@@ -1,93 +1,108 @@
 package jato
 
 import (
+	"errors"
+	"fmt"
 	"io"
-	"net"
-	"strings"
+	"regexp"
 	"sync"
 	"time"
 
 	"github.com/automatico/jato/internal"
+	"github.com/reiver/go-telnet"
 )
 
-func TelnetExpecter(conn net.Conn, cmd string, expecting string, timeout int64) (string, error) {
-	// How long to wait for response from device
-	// before we give up and consider it timed out.
-	countdown := time.Duration(timeout) * time.Second
+const TelnetPort int = 23
 
-	// Big buffer holds the result
-	result := make([]byte, 0, 4096)
-	// Used to read characters into queue
+type TelnetParams struct {
+	Port int
+}
+
+type TelnetDevice interface {
+	Init()
+	ConnectWithTelnet() error
+	SendCommandsWithTelnet([]string) Result
+	DisconnectTelnet() error
+}
+
+func SendCommandsWithTelnet(conn *telnet.Conn, commands []string, expect *regexp.Regexp, timeout int64) ([]CommandOutput, error) {
+
+	cmdOut := []CommandOutput{}
+
+	for _, cmd := range commands {
+		res, err := SendCommandWithTelnet(conn, cmd, expect, timeout)
+		if err != nil {
+			return cmdOut, err
+		}
+		cmdOut = append(cmdOut, res)
+	}
+
+	return cmdOut, nil
+
+}
+
+func SendCommandWithTelnet(conn *telnet.Conn, cmd string, expect *regexp.Regexp, timeout int64) (CommandOutput, error) {
+
+	cmdOut := CommandOutput{}
+
+	writeTelnet(conn, cmd)
+	time.Sleep(time.Millisecond * 3)
+
+	res, err := readTelnet(conn, expect, timeout)
+	if err != nil {
+		return cmdOut, err
+	}
+
+	cmdOut.Command = internal.Underscorer(cmd)
+	cmdOut.Output = res
+
+	return cmdOut, nil
+}
+
+func writeTelnet(w io.Writer, s string) error {
+	_, err := w.Write([]byte(s + "\n"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func readTelnet(r io.Reader, expect *regexp.Regexp, timeout int64) (string, error) {
+	maxBuf := 8192
 	tmp := make([]byte, 1)
+	result := make([]byte, 0, maxBuf)
 
-	// Holds number of characters equal to maxQueueLength for
-	// matching the expect string
-	queue := []string{}
-	maxQueueLength := len(expecting)
+	start := time.Now()
+	for i := 0; i < maxBuf; i++ {
+		if time.Since(start) > time.Second*time.Duration(timeout) {
+			err := errors.New("timeout reading from buffer")
+			return string(result), err
 
-	// Send command to device
-	// fmt.Fprintf(conn, cmd+"\n")
-	conn.Write([]byte(cmd + "\n"))
-
-	for {
-		// Set timeout for reading from device
-		conn.SetReadDeadline(time.Now().Add(countdown))
-
-		n, err := conn.Read(tmp)
+		}
+		n, err := r.Read(tmp)
 		if err != nil {
 			if err == io.EOF {
-				break // Reached the end of file
-			}
-			return "read error", err
-		}
-
-		result = append(result, tmp[:n]...)
-
-		if maxQueueLength == 1 && string(tmp) == expecting {
-			// Your done, exit the loop
-			break
-		} else if len(queue) == maxQueueLength {
-			// Queue is full, check for expecting string
-			if strings.Join(queue, "") == expecting {
-				// Your done, exit the loop
 				break
-			} else {
-				// Pop the front elememnt and shift the rest of the
-				// elements left
-				_, queue = queue[0], queue[1:]
-				// Add element to the end of the queue
-				queue = append(queue, string(tmp))
 			}
-		} else {
-			// Queue is not full, so add elements to queue
-			queue = append(queue, string(tmp))
+			return string(result), err
 		}
-
+		result = append(result, tmp[:n]...)
+		if expect.MatchString(string(result)) {
+			break
+		}
 	}
 	return string(result), nil
 }
 
-func TelnetRunner(nd NetDevice, ce CommandExpect, ch chan Result, wg *sync.WaitGroup) {
-	conn := nd.ConnectWithTelnet()
-	defer conn.Close()
+func RunWithTelnet(td TelnetDevice, commands []string, ch chan Result, wg *sync.WaitGroup) {
+	err := td.ConnectWithTelnet()
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer td.DisconnectTelnet()
 	defer wg.Done()
 
-	result := Result{}
-	cmdOut := []CommandOutput{}
+	result := td.SendCommandsWithTelnet(commands)
 
-	result.Device = nd.Name
-	result.Timestamp = time.Now().Unix()
-	for _, cmd := range ce.CommandExpect {
-		res, err := TelnetExpecter(conn, cmd.Command, cmd.Expecting, cmd.Timeout)
-		if err != nil {
-			result.OK = false
-			ch <- result
-			return
-		}
-		out := CommandOutput{Command: internal.Underscorer(cmd.Command), Output: res}
-		cmdOut = append(cmdOut, out)
-	}
-	result.CommandOutputs = cmdOut
-	result.OK = true
 	ch <- result
 }
