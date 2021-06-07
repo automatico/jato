@@ -15,6 +15,14 @@ func Underscorer(s string) string {
 	return re.Replace(s)
 }
 
+// CleanOutput removes the first and last lines from
+// a string. Strings are split on '\r\n' line endings
+func CleanOutput(s string) string {
+	slice := strings.Split(s, "\r\n")
+	middle := slice[1 : len(slice)-1]
+	return strings.Join(middle, "\r\n")
+}
+
 // LoadTemplate loads a template from a filename string
 func LoadTemplate(s string) *template.Template {
 	t, err := template.ParseFiles(s)

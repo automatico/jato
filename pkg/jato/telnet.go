@@ -53,8 +53,9 @@ func SendCommandWithTelnet(conn *telnet.Conn, cmd string, expect *regexp.Regexp,
 		return cmdOut, err
 	}
 
-	cmdOut.Command = internal.Underscorer(cmd)
-	cmdOut.Output = res
+	cmdOut.Command = cmd
+	cmdOut.CommandU = internal.Underscorer(cmd)
+	cmdOut.Output = internal.CleanOutput(res)
 
 	return cmdOut, nil
 }

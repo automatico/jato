@@ -58,7 +58,6 @@ func main() {
 		ch := make(chan jato.Result)
 		defer close(ch)
 
-		// ssh.SSH(cliParams)
 		wg.Add(len(ciscoIOSDevices))
 		for _, dev := range ciscoIOSDevices {
 			dev := dev // lock the host or the same host can run more than once

@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/automatico/jato/internal"
 )
 
 func LoadCommands(fileName string) Commands {
@@ -54,29 +56,32 @@ func WriteToFile(timestamp int64, results []Result) {
 		}
 		writer := bufio.NewWriter(file)
 		for _, output := range result.CommandOutputs {
-			_, err := writer.WriteString(output.Output)
+
+			_, err = writer.WriteString(internal.Divider(output.Command))
+			if err != nil {
+				log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
+			}
+			_, err = writer.WriteString(output.Output)
+			if err != nil {
+				log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
+			}
+			_, err = writer.WriteString("\r\n")
 			if err != nil {
 				log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
 			}
 		}
 		writer.Flush()
-		fmt.Printf("Saved RAW output: %s\n", result.Device)
 	}
 }
 
 // Write the output from commands run against
 // devices to a json file
 func WriteToJSONFile(timestamp int64, results []Result) {
-	// fmt.Println("########################")
-	// fmt.Println(results)
-	// fmt.Println("########################")
-
 	outdir := "data"
 	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))
 		file, _ := json.MarshalIndent(result, "", " ")
 		_ = ioutil.WriteFile(fmt.Sprintf("%s/%s/%d.json", outdir, result.Device, timestamp), file, 0644)
-		fmt.Printf("Saved JSON output: %s\n", result.Device)
 	}
 }
 
