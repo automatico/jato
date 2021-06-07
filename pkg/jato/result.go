@@ -2,8 +2,9 @@ package jato
 
 // CommandOutput holds the output of commands run
 type CommandOutput struct {
-	Command string
-	Output  string
+	Command  string // Original Command
+	CommandU string // Underscored Command
+	Output   string // Output from Command
 }
 
 // Result hold the result of the job run

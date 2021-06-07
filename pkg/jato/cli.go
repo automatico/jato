@@ -88,7 +88,7 @@ func CLI() Params {
 
 // promptSecret prompts user for an input that is not echo-ed on terminal.
 func promptSecret(question string) (string, error) {
-	fmt.Printf(question + "\n> ")
+	fmt.Printf(question + "\n=> ")
 
 	raw, err := term.MakeRaw(0)
 	if err != nil {

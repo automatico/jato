@@ -3,39 +3,15 @@ package internal
 import (
 	"fmt"
 	"strings"
-	"syscall"
-	"unsafe"
 )
 
-var termWidth = seperator("#")
+// var termWidth = seperator("#")
+const termWidth = "!----------------------------!"
 
-// The below is used to determine the size of
-// the terminal session.
-type winsize struct {
-	Row    uint16
-	Col    uint16
-	Xpixel uint16
-	Ypixel uint16
-}
-
-func getWidth() uint {
-	ws := &winsize{}
-	retCode, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
-		uintptr(syscall.Stdin),
-		uintptr(syscall.TIOCGWINSZ),
-		uintptr(unsafe.Pointer(ws)))
-
-	if int(retCode) == -1 {
-		panic(errno)
-	}
-	return uint(ws.Col)
-}
-
-func seperator(s string) string {
-	tw := int(getWidth())
+func spacer(n int) string {
 	var str strings.Builder
-	for i := 0; i < tw; i++ {
-		str.WriteString(s)
+	for i := 0; i < n; i++ {
+		str.WriteString(" ")
 	}
 	return str.String()
 }
@@ -46,5 +22,7 @@ func seperator(s string) string {
 // Job Parameters
 // ##################
 func Divider(message string) string {
-	return fmt.Sprintf("%s\n%s\n%s\n", termWidth, message, termWidth)
+	mlen := len(message)
+	spaces := spacer((29 - mlen) / 2)
+	return fmt.Sprintf("%s\n!%s%s\n%s\n", termWidth, spaces, message, termWidth)
 }

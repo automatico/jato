@@ -6,7 +6,7 @@ const CliRunner = `
 {{.divider}}
 Credentials:
   - Username:       {{.params.Credentials.Username}}
-  - Password:       {{.params.Credentials.Password}}
+  - Password:       **********
   - SSH Key File:   {{.params.Credentials.SSHKeyFile}}
   - Super Password: {{.params.Credentials.SuperPassword}}
 
