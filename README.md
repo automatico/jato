@@ -1,6 +1,9 @@
 # Jato
 Manage network devices
 
+## Requirements
+Go ~v1.11+
+
 ## Setup
 
 ### Environment variables
@@ -61,13 +64,16 @@ Inspect the options available
 ./jato.exe -h
 
 Usage of jato:
+  -a    Ask for user password
   -c string
         Commands to run file (default "commands.json")
   -d string
         Devices inventory file (default "devices.json")
-  -p    Ask for user password
+  -noop
+        Don't execute job against devices
   -u string
-        Username to connect to devices with (default "JATO_USERNAME environment variable")
+        Username to connect to devices with
+  -v    Jato version
 ```
 
 Run a series of commands against N number of devices.

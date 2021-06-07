@@ -4,12 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"syscall"
 
 	"github.com/automatico/jato/internal"
 	"golang.org/x/term"
 )
 
-const version = "2021.06.01"
+const version = "2021.06.02"
 
 type Jato struct {
 	Credentials
@@ -90,27 +91,10 @@ func CLI() Params {
 func promptSecret(question string) (string, error) {
 	fmt.Printf(question + "\n=> ")
 
-	raw, err := term.MakeRaw(0)
+	bytepw, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return "", err
 	}
-	defer term.Restore(0, raw)
-
-	var (
-		prompt string
-		answer string
-	)
-
-	term := term.NewTerminal(os.Stdin, prompt)
-	for {
-		char, err := term.ReadPassword(prompt)
-		if err != nil {
-			return "", err
-		}
-		answer += char
-
-		if char == "" || char == answer {
-			return answer, nil
-		}
-	}
+	pass := string(bytepw)
+	return pass, nil
 }
