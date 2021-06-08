@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/automatico/jato/internal"
+	"github.com/automatico/jato/internal/terminal"
 )
 
 func LoadCommands(fileName string) Commands {
@@ -46,18 +46,35 @@ func LoadDevices(fileName string) Devices {
 
 // Write the output from commands run against
 // devices to a plain text file
-func WriteToFile(timestamp int64, results []Result) {
+func WriteToFile(results []Result) {
 	outdir := "output"
 	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))
-		file, err := os.OpenFile(fmt.Sprintf("%s/%s/%d.raw", outdir, result.Device, timestamp), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		file, err := os.OpenFile(fmt.Sprintf("%s/%s/%d.raw", outdir, result.Device, result.Timestamp), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Fatal(err)
 		}
 		writer := bufio.NewWriter(file)
-		for _, output := range result.CommandOutputs {
 
-			_, err = writer.WriteString(internal.Banner(output.Command))
+		_, err = writer.WriteString(fmt.Sprintf("! Device:    %s\n", result.Device))
+		if err != nil {
+			log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
+		}
+		_, err = writer.WriteString(fmt.Sprintf("! Timestamp: %d\n", result.Timestamp))
+		if err != nil {
+			log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
+		}
+		_, err = writer.WriteString(fmt.Sprintf("! OK:        %t\n", result.OK))
+		if err != nil {
+			log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
+		}
+		_, err = writer.WriteString(fmt.Sprintf("! Error:     %s\n", result.Error))
+		if err != nil {
+			log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
+		}
+
+		for _, output := range result.CommandOutputs {
+			_, err = writer.WriteString(terminal.Banner(output.Command))
 			if err != nil {
 				log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
 			}
@@ -76,12 +93,12 @@ func WriteToFile(timestamp int64, results []Result) {
 
 // Write the output from commands run against
 // devices to a json file
-func WriteToJSONFile(timestamp int64, results []Result) {
+func WriteToJSONFile(results []Result) {
 	outdir := "output"
 	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))
 		file, _ := json.MarshalIndent(result, "", " ")
-		_ = ioutil.WriteFile(fmt.Sprintf("%s/%s/%d.json", outdir, result.Device, timestamp), file, 0644)
+		_ = ioutil.WriteFile(fmt.Sprintf("%s/%s/%d.json", outdir, result.Device, result.Timestamp), file, 0644)
 	}
 }
 

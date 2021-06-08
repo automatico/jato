@@ -6,7 +6,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/automatico/jato/internal"
+	"github.com/automatico/jato/internal/utils"
 	"golang.org/x/term"
 )
 
@@ -68,11 +68,11 @@ func CLI() Params {
 	}
 
 	// Devices
-	internal.FileStat(*devicesPtr)
+	utils.FileStat(*devicesPtr)
 	params.Devices = LoadDevices(*devicesPtr)
 
 	// Commands
-	internal.FileStat(*commandsPtr)
+	utils.FileStat(*commandsPtr)
 	params.Commands = LoadCommands(*commandsPtr)
 
 	// No Op

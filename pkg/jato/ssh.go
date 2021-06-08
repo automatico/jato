@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/automatico/jato/internal"
+	"github.com/automatico/jato/internal/utils"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -77,8 +77,8 @@ func SendCommandWithSSH(conn SSHConn, cmd string, expect *regexp.Regexp, timeout
 	}
 
 	cmdOut.Command = cmd
-	cmdOut.CommandU = internal.Underscorer(cmd)
-	cmdOut.Output = internal.CleanOutput(res)
+	cmdOut.CommandU = utils.Underscorer(cmd)
+	cmdOut.Output = utils.CleanOutput(res)
 
 	return cmdOut, nil
 }

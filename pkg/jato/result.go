@@ -20,3 +20,21 @@ type Result struct {
 type Results struct {
 	Results []Result
 }
+
+type ResultMap struct {
+	Device         string            `json:"device"`
+	OK             bool              `json:"ok"`
+	Error          string            `json:"error"`
+	Timestamp      int64             `json:"timestamp"`
+	CommandOutputs map[string]string `json:"commandOutputs"`
+}
+
+// CommandOutputToMap converts a CommandOutput struct
+// to a map with CommandU as the key and Output as the value.
+func CommandOutputToMap(co []CommandOutput) map[string]string {
+	res := map[string]string{}
+	for _, c := range co {
+		res[c.CommandU] = c.Output
+	}
+	return res
+}
