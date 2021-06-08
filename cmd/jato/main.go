@@ -22,7 +22,7 @@ func main() {
 
 	// Output data to feed into template
 	data := map[string]interface{}{}
-	data["divider"] = internal.Divider("Job Parameters")
+	data["banner"] = internal.Banner("Job Parameters")
 	data["params"] = cliParams
 
 	// CLI output
@@ -81,7 +81,7 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Print(internal.Divider("Job Results"))
+		fmt.Print(internal.Banner("Job Results"))
 
 		for _, r := range results {
 			err = t.Execute(os.Stdout, r)

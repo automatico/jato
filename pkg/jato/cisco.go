@@ -17,6 +17,8 @@ var (
 	CiscoDisablePaging     string         = "terminal length 0"
 )
 
+// CiscoIOSDevice implements the TelnetDevice
+// and SSHDevice interfaces
 type CiscoIOSDevice struct {
 	IP                string `json:"ip"`
 	Name              string `json:"name"`
@@ -145,9 +147,9 @@ func (cd *CiscoIOSDevice) ConnectWithSSH() error {
 	)
 
 	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,     // disable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+		ssh.ECHO:          0,
+		ssh.TTY_OP_ISPEED: 115200,
+		ssh.TTY_OP_OSPEED: 115200,
 	}
 
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cd.IP, cd.SSHParams.Port), clientConfig)

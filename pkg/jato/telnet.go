@@ -19,7 +19,6 @@ type TelnetParams struct {
 }
 
 type TelnetDevice interface {
-	Init()
 	ConnectWithTelnet() error
 	SendCommandsWithTelnet([]string) Result
 	DisconnectTelnet() error

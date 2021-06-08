@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-// var termWidth = seperator("#")
-const termWidth = "!----------------------------!"
+const line = "!----------------------------------------------------------!"
 
+// spacer creates a string of n number of spaces
 func spacer(n int) string {
 	var str strings.Builder
 	for i := 0; i < n; i++ {
@@ -16,13 +16,20 @@ func spacer(n int) string {
 	return str.String()
 }
 
-// Divider is used to output a dividing string
+// Banner is used to output a banner string
 // between outputs. EG:
-// ##################
-// Job Parameters
-// ##################
-func Divider(message string) string {
-	mlen := len(message)
-	spaces := spacer((29 - mlen) / 2)
-	return fmt.Sprintf("%s\n!%s%s\n%s\n", termWidth, spaces, message, termWidth)
+// !----------------------------------------------------------!
+// !                       MESSAGE                            !
+// !----------------------------------------------------------!
+func Banner(message string) string {
+	msgLen := len(message)
+	numSpaces := (58 - msgLen) / 2
+	preMsgSpaces := spacer(numSpaces)
+	var postMsgSpaces string
+	if msgLen%2 == 0 {
+		postMsgSpaces = spacer(numSpaces)
+	} else {
+		postMsgSpaces = spacer(numSpaces + 1)
+	}
+	return fmt.Sprintf("%s\n!%s%s%s!\n%s\n", line, preMsgSpaces, message, postMsgSpaces, line)
 }

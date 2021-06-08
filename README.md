@@ -80,7 +80,7 @@ Run a series of commands against N number of devices.
 ```
 ./jato -d test/devices/cisco.json -c test/commands/cisco_ios.json
 ```
-The results will be saved to a `data/` directory. The result of the 
+The results will be saved to a `output/` directory. The result of the 
 commands run will be saved to a time stamped files. Once with the 
 raw output and another with a json array of the command to value 
 hash.

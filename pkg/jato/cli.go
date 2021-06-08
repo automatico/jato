@@ -12,12 +12,6 @@ import (
 
 const version = "2021.06.02"
 
-type Jato struct {
-	Credentials
-	Devices
-	Commands
-}
-
 // Params contain the result of CLI input
 type Params struct {
 	Credentials Credentials

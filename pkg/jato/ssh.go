@@ -28,7 +28,6 @@ type SSHConn struct {
 }
 
 type SSHDevice interface {
-	Init()
 	ConnectWithSSH() error
 	SendCommandsWithSSH([]string) Result
 	DisconnectSSH() error

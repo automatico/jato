@@ -47,7 +47,7 @@ func LoadDevices(fileName string) Devices {
 // Write the output from commands run against
 // devices to a plain text file
 func WriteToFile(timestamp int64, results []Result) {
-	outdir := "data"
+	outdir := "output"
 	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))
 		file, err := os.OpenFile(fmt.Sprintf("%s/%s/%d.raw", outdir, result.Device, timestamp), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -57,7 +57,7 @@ func WriteToFile(timestamp int64, results []Result) {
 		writer := bufio.NewWriter(file)
 		for _, output := range result.CommandOutputs {
 
-			_, err = writer.WriteString(internal.Divider(output.Command))
+			_, err = writer.WriteString(internal.Banner(output.Command))
 			if err != nil {
 				log.Fatalf("Got error while writing to a file. Err: %s", err.Error())
 			}
@@ -77,7 +77,7 @@ func WriteToFile(timestamp int64, results []Result) {
 // Write the output from commands run against
 // devices to a json file
 func WriteToJSONFile(timestamp int64, results []Result) {
-	outdir := "data"
+	outdir := "output"
 	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))
 		file, _ := json.MarshalIndent(result, "", " ")

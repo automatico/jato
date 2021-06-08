@@ -3,7 +3,7 @@ package templates
 // CliRunner is the outut for a
 // job run from the CLI.
 const CliRunner = `
-{{.divider}}
+{{.banner}}
 Credentials:
   - Username:       {{.params.Credentials.Username}}
   - Password:       **********
