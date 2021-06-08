@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/automatico/jato/internal"
+	"github.com/automatico/jato/internal/utils"
 	"github.com/reiver/go-telnet"
 )
 
@@ -53,8 +53,8 @@ func SendCommandWithTelnet(conn *telnet.Conn, cmd string, expect *regexp.Regexp,
 	}
 
 	cmdOut.Command = cmd
-	cmdOut.CommandU = internal.Underscorer(cmd)
-	cmdOut.Output = internal.CleanOutput(res)
+	cmdOut.CommandU = utils.Underscorer(cmd)
+	cmdOut.Output = utils.CleanOutput(res)
 
 	return cmdOut, nil
 }

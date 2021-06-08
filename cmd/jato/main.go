@@ -5,10 +5,9 @@ import (
 	"html/template"
 	"os"
 	"sync"
-	"time"
 
-	"github.com/automatico/jato/internal"
 	"github.com/automatico/jato/internal/templates"
+	"github.com/automatico/jato/internal/terminal"
 	"github.com/automatico/jato/pkg/jato"
 )
 
@@ -16,13 +15,13 @@ var ciscoIOSDevices []jato.CiscoIOSDevice
 
 func main() {
 
-	timeNow := time.Now().Unix()
+	// timeNow := time.Now().Unix()
 
 	cliParams := jato.CLI()
 
 	// Output data to feed into template
 	data := map[string]interface{}{}
-	data["banner"] = internal.Banner("Job Parameters")
+	data["banner"] = terminal.Banner("Job Parameters")
 	data["params"] = cliParams
 
 	// CLI output
@@ -81,7 +80,7 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Print(internal.Banner("Job Results"))
+		fmt.Print(terminal.Banner("Job Results"))
 
 		for _, r := range results {
 			err = t.Execute(os.Stdout, r)
@@ -91,8 +90,8 @@ func main() {
 			}
 		}
 
-		jato.WriteToFile(timeNow, results)
-		jato.WriteToJSONFile(timeNow, results)
+		jato.WriteToFile(results)
+		jato.WriteToJSONFile(results)
 	}
 
 }
