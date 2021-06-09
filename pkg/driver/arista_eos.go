@@ -9,7 +9,6 @@ import (
 	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
-	"github.com/reiver/go-telnet"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -34,74 +33,7 @@ type AristaEOSDevice struct {
 	DisablePaging     string
 	data.Credentials
 	network.SSHParams
-	network.TelnetParams
 	network.SSHConn
-	TelnetConn *telnet.Conn
-}
-
-func (ad *AristaEOSDevice) ConnectWithTelnet() error {
-
-	conn, err := telnet.DialTo(fmt.Sprintf("%s:%d", ad.IP, ad.TelnetParams.Port))
-	if err != nil {
-		return err
-	}
-
-	_, err = network.SendCommandWithTelnet(conn, ad.Username, constant.PasswordRE, 1)
-	if err != nil {
-		fmt.Println(err)
-	}
-	_, err = network.SendCommandWithTelnet(conn, ad.Password, ad.SuperUserPromptRE, 1)
-	if err != nil {
-		fmt.Println(err)
-	}
-	_, err = network.SendCommandWithTelnet(conn, ad.DisablePaging, ad.SuperUserPromptRE, 1)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	ad.TelnetConn = conn
-
-	return nil
-}
-
-func (ad AristaEOSDevice) DisconnectTelnet() error {
-	return ad.TelnetConn.Close()
-}
-
-func (ad AristaEOSDevice) SendCommandWithTelnet(cmd string) data.Result {
-
-	result := data.Result{}
-
-	result.Device = ad.Name
-	result.Timestamp = time.Now().Unix()
-
-	cmdOut, err := network.SendCommandWithTelnet(ad.TelnetConn, cmd, ad.SuperUserPromptRE, 2)
-	if err != nil {
-		result.OK = false
-		return result
-	}
-
-	result.CommandOutputs = append(result.CommandOutputs, cmdOut)
-	result.OK = true
-	return result
-}
-
-func (ad AristaEOSDevice) SendCommandsWithTelnet(commands []string) data.Result {
-
-	result := data.Result{}
-
-	result.Device = ad.Name
-	result.Timestamp = time.Now().Unix()
-
-	cmdOut, err := network.SendCommandsWithTelnet(ad.TelnetConn, commands, ad.SuperUserPromptRE, 2)
-	if err != nil {
-		result.OK = false
-		return result
-	}
-
-	result.CommandOutputs = cmdOut
-	result.OK = true
-	return result
 }
 
 func (ad *AristaEOSDevice) ConnectWithSSH() error {
@@ -217,7 +149,6 @@ func NewAristaEOSDevice(nd NetDevice) AristaEOSDevice {
 	ad.Connector = nd.Connector
 	ad.Credentials = nd.Credentials
 	ad.SSHParams = nd.SSHParams
-	ad.TelnetParams = nd.TelnetParams
 
 	// Prompts
 	ad.UserPromptRE = AristaUserPromptRE
@@ -238,9 +169,5 @@ func NewAristaEOSDevice(nd NetDevice) AristaEOSDevice {
 		ad.SSHParams.InsecureCyphers = true
 	}
 
-	// Telnet Params
-	if ad.TelnetParams.Port == 0 {
-		ad.TelnetParams.Port = constant.TelnetPort
-	}
 	return ad
 }
