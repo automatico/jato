@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	AristaUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)^[a-z0-9.\\-_@()/:]{1,63}>$`)
-	AristaSuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)#$`)
-	AristaConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)^[a-z0-9.\-_@/:]{1,63}\([a-z0-9.\-@/:\+]{0,32}\)#$`)
+	AristaUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.-]{1,63}>$`)
+	AristaSuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.-]{1,63}#$`)
+	AristaConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.-]{1,63}\(config[a-z0-9-]{0,63}\)#$`)
 	AristaDisablePaging     string         = "terminal length 0"
 )
 
@@ -121,7 +121,6 @@ func (ad *AristaEOSDevice) ConnectWithSSH() error {
 		ssh.TTY_OP_OSPEED: 115200,
 	}
 
-	fmt.Printf("%+v\n", ad)
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", ad.IP, ad.SSHParams.Port), clientConfig)
 	if err != nil {
 		log.Fatalf("Failed to dial: %s", err)
