@@ -17,6 +17,7 @@ import (
 
 var ciscoIOSDevices []driver.CiscoIOSDevice
 var aristaEOSDevices []driver.AristaEOSDevice
+var juniperJunosDevices []driver.JuniperJunosDevice
 
 func main() {
 
@@ -53,6 +54,9 @@ func main() {
 		case "arista_eos":
 			ad := driver.NewAristaEOSDevice(d)
 			aristaEOSDevices = append(aristaEOSDevices, ad)
+		case "juniper_junos":
+			jd := driver.NewJuniperJunosDevice(d)
+			juniperJunosDevices = append(juniperJunosDevices, jd)
 		default:
 			logger.Warning(fmt.Sprintf("device: %s with vendor: %s and platform: %s not supported", d.Name, d.Vendor, d.Platform))
 		}
@@ -86,7 +90,16 @@ func main() {
 			}
 		}
 
-		devTotal := len(ciscoIOSDevices) + len(aristaEOSDevices)
+		wg.Add(len(juniperJunosDevices))
+		for _, dev := range juniperJunosDevices {
+			dev := dev // lock the host or the same host can run more than once
+			switch dev.Connector {
+			case "ssh":
+				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			}
+		}
+
+		devTotal := len(ciscoIOSDevices) + len(aristaEOSDevices) + len(juniperJunosDevices)
 		for i := 0; i < devTotal; i++ {
 			results = append(results, <-ch)
 		}
