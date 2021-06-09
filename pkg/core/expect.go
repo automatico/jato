@@ -15,8 +15,3 @@ type Expect struct {
 type CommandExpect struct {
 	CommandExpect []Expect `json:"command_expect"`
 }
-
-// Commands hosts a slice of commands
-type Commands struct {
-	Commands []string `json:"commands"`
-}
