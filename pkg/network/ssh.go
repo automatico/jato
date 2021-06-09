@@ -12,10 +12,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var (
-	SSHPort int = 22
-)
-
 type SSHParams struct {
 	Port               int
 	InsecureConnection bool

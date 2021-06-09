@@ -39,40 +39,6 @@ type CiscoIOSDevice struct {
 	TelnetConn *telnet.Conn
 }
 
-func (cd *CiscoIOSDevice) Init() {
-	// Prompts
-	if cd.UserPromptRE == nil {
-		cd.UserPromptRE = CiscoUserPromptRE
-	}
-	if cd.SuperUserPromptRE == nil {
-		cd.SuperUserPromptRE = CiscoSuperUserPromptRE
-	}
-	if cd.ConfigPromtRE == nil {
-		cd.ConfigPromtRE = CiscoConfigPromptRE
-	}
-
-	// Paging
-	if cd.DisablePaging == "" {
-		cd.DisablePaging = CiscoDisablePaging
-	}
-
-	// SSH Params
-	if cd.SSHParams.Port == 0 {
-		cd.SSHParams.Port = network.SSHPort
-	}
-	if !cd.SSHParams.InsecureConnection {
-		cd.SSHParams.InsecureConnection = true
-	}
-	if !cd.SSHParams.InsecureCyphers {
-		cd.SSHParams.InsecureCyphers = true
-	}
-
-	// Telnet Params
-	if cd.TelnetParams.Port == 0 {
-		cd.TelnetParams.Port = network.TelnetPort
-	}
-}
-
 func (cd *CiscoIOSDevice) ConnectWithTelnet() error {
 
 	conn, err := telnet.DialTo(fmt.Sprintf("%s:%d", cd.IP, cd.TelnetParams.Port))

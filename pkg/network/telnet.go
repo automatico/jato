@@ -13,8 +13,6 @@ import (
 	"github.com/reiver/go-telnet"
 )
 
-const TelnetPort int = 23
-
 type TelnetParams struct {
 	Port int
 }

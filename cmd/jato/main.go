@@ -63,7 +63,6 @@ func main() {
 		wg.Add(len(ciscoIOSDevices))
 		for _, dev := range ciscoIOSDevices {
 			dev := dev // lock the host or the same host can run more than once
-			dev.Init()
 			if dev.Connector == "telnet" {
 				go network.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
 			} else if dev.Connector == "ssh" {
