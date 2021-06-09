@@ -16,10 +16,9 @@ import (
 )
 
 var ciscoIOSDevices []driver.CiscoIOSDevice
+var aristaEOSDevices []driver.AristaEOSDevice
 
 func main() {
-
-	// timeNow := time.Now().Unix()
 
 	cliParams := core.CLI()
 
@@ -51,6 +50,9 @@ func main() {
 		case "cisco_ios":
 			cd := driver.NewCiscoIOSDevice(d)
 			ciscoIOSDevices = append(ciscoIOSDevices, cd)
+		case "arista_eos":
+			ad := driver.NewAristaEOSDevice(d)
+			aristaEOSDevices = append(aristaEOSDevices, ad)
 		default:
 			logger.Warning(fmt.Sprintf("device: %s with vendor: %s and platform: %s not supported", d.Name, d.Vendor, d.Platform))
 		}
@@ -67,14 +69,26 @@ func main() {
 		wg.Add(len(ciscoIOSDevices))
 		for _, dev := range ciscoIOSDevices {
 			dev := dev // lock the host or the same host can run more than once
-			if dev.Connector == "telnet" {
+			switch dev.Connector {
+			case "telnet":
 				go network.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
-			} else if dev.Connector == "ssh" {
+			case "ssh":
 				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
 			}
 		}
 
-		devTotal := len(ciscoIOSDevices)
+		wg.Add(len(aristaEOSDevices))
+		for _, dev := range aristaEOSDevices {
+			dev := dev // lock the host or the same host can run more than once
+			switch dev.Connector {
+			case "telnet":
+				go network.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
+			case "ssh":
+				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			}
+		}
+
+		devTotal := len(ciscoIOSDevices) + len(aristaEOSDevices)
 		for i := 0; i < devTotal; i++ {
 			results = append(results, <-ch)
 		}
