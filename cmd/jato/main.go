@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/automatico/jato/internal/logger"
 	"github.com/automatico/jato/internal/templates"
 	"github.com/automatico/jato/internal/terminal"
 	"github.com/automatico/jato/pkg/core"
@@ -44,11 +45,14 @@ func main() {
 		d.Credentials.Password = cliParams.Credentials.Password
 		d.Credentials.SuperPassword = cliParams.Credentials.SuperPassword
 		d.Credentials.SSHKeyFile = cliParams.Credentials.SSHKeyFile
-		if d.Vendor == "cisco" {
-			if d.Platform == "ios" {
-				cd := driver.NewCiscoIOSDevice(d)
-				ciscoIOSDevices = append(ciscoIOSDevices, cd)
-			}
+
+		vendorPlatform := fmt.Sprintf("%s_%s", d.Vendor, d.Platform)
+		switch vendorPlatform {
+		case "cisco_ios":
+			cd := driver.NewCiscoIOSDevice(d)
+			ciscoIOSDevices = append(ciscoIOSDevices, cd)
+		default:
+			logger.Warning(fmt.Sprintf("device: %s with vendor: %s and platform: %s not supported", d.Name, d.Vendor, d.Platform))
 		}
 	}
 
