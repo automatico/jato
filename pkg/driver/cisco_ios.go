@@ -205,3 +205,42 @@ func (cd CiscoIOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 	result.OK = true
 	return result
 }
+
+// NewCiscoIOSDevice takes a NetDevice and initializes
+// a CiscoIOSDevice.
+func NewCiscoIOSDevice(nd NetDevice) CiscoIOSDevice {
+	cd := CiscoIOSDevice{}
+	cd.IP = nd.IP
+	cd.Name = nd.Name
+	cd.Vendor = nd.Vendor
+	cd.Platform = nd.Platform
+	cd.Connector = nd.Connector
+	cd.Credentials = nd.Credentials
+	cd.SSHParams = nd.SSHParams
+	cd.TelnetParams = nd.TelnetParams
+
+	// Prompts
+	cd.UserPromptRE = CiscoUserPromptRE
+	cd.SuperUserPromptRE = CiscoSuperUserPromptRE
+	cd.ConfigPromtRE = CiscoConfigPromptRE
+
+	// Paging
+	cd.DisablePaging = CiscoDisablePaging
+
+	// SSH Params
+	if cd.SSHParams.Port == 0 {
+		cd.SSHParams.Port = constant.SSHPort
+	}
+	if !cd.SSHParams.InsecureConnection {
+		cd.SSHParams.InsecureConnection = true
+	}
+	if !cd.SSHParams.InsecureCyphers {
+		cd.SSHParams.InsecureCyphers = true
+	}
+
+	// Telnet Params
+	if cd.TelnetParams.Port == 0 {
+		cd.TelnetParams.Port = constant.TelnetPort
+	}
+	return cd
+}
