@@ -1,4 +1,4 @@
-package jato
+package core
 
 import (
 	"bufio"
@@ -9,44 +9,46 @@ import (
 	"os"
 
 	"github.com/automatico/jato/internal/terminal"
+	"github.com/automatico/jato/pkg/data"
+	"github.com/automatico/jato/pkg/driver"
 )
 
-func LoadCommands(fileName string) Commands {
+func LoadCommands(fileName string) data.Commands {
 	file, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data := Commands{}
+	commands := data.Commands{}
 
-	err = json.Unmarshal([]byte(file), &data)
+	err = json.Unmarshal([]byte(file), &commands)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return data
+	return commands
 }
 
 // Load a list of devices from a JSON file
-func LoadDevices(fileName string) Devices {
+func LoadDevices(fileName string) driver.Devices {
 	file, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data := Devices{}
+	devices := driver.Devices{}
 
-	err = json.Unmarshal([]byte(file), &data)
+	err = json.Unmarshal([]byte(file), &devices)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return data
+	return devices
 }
 
 // Write the output from commands run against
 // devices to a plain text file
-func WriteToFile(results []Result) {
+func WriteToFile(results []data.Result) {
 	outdir := "output"
 	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))
@@ -93,7 +95,7 @@ func WriteToFile(results []Result) {
 
 // Write the output from commands run against
 // devices to a json file
-func WriteToJSONFile(results []Result) {
+func WriteToJSONFile(results []data.Result) {
 	outdir := "output"
 	for _, result := range results {
 		CreateDeviceDir(fmt.Sprintf("%s/%s", outdir, result.Device))

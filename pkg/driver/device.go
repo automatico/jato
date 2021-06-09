@@ -1,4 +1,9 @@
-package jato
+package driver
+
+import (
+	"github.com/automatico/jato/pkg/data"
+	"github.com/automatico/jato/pkg/network"
+)
 
 // Devices holds a collection of Device structs
 type Devices struct {
@@ -11,12 +16,12 @@ type NetDevice struct {
 	Vendor    string `json:"vendor"`
 	Platform  string `json:"platform"`
 	Connector string `json:"connector"`
-	Credentials
-	SSHParams
-	TelnetParams
+	data.Credentials
+	network.SSHParams
+	network.TelnetParams
 }
 
-func NetToCiscoIOSDevice(nd NetDevice) CiscoIOSDevice {
+func NewCiscoIOSDevice(nd NetDevice) CiscoIOSDevice {
 	cd := CiscoIOSDevice{}
 	cd.IP = nd.IP
 	cd.Name = nd.Name

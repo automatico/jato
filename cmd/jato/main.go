@@ -8,21 +8,24 @@ import (
 
 	"github.com/automatico/jato/internal/templates"
 	"github.com/automatico/jato/internal/terminal"
-	"github.com/automatico/jato/pkg/jato"
+	"github.com/automatico/jato/pkg/core"
+	"github.com/automatico/jato/pkg/data"
+	"github.com/automatico/jato/pkg/driver"
+	"github.com/automatico/jato/pkg/network"
 )
 
-var ciscoIOSDevices []jato.CiscoIOSDevice
+var ciscoIOSDevices []driver.CiscoIOSDevice
 
 func main() {
 
 	// timeNow := time.Now().Unix()
 
-	cliParams := jato.CLI()
+	cliParams := core.CLI()
 
 	// Output data to feed into template
-	data := map[string]interface{}{}
-	data["banner"] = terminal.Banner("Job Parameters")
-	data["params"] = cliParams
+	templateData := map[string]interface{}{}
+	templateData["banner"] = terminal.Banner("Job Parameters")
+	templateData["params"] = cliParams
 
 	// CLI output
 	t, err := template.New("output").Parse(templates.CliRunner)
@@ -30,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	err = t.Execute(os.Stdout, data)
+	err = t.Execute(os.Stdout, templateData)
 
 	if err != nil {
 		panic(err)
@@ -43,7 +46,7 @@ func main() {
 		d.Credentials.SSHKeyFile = cliParams.Credentials.SSHKeyFile
 		if d.Vendor == "cisco" {
 			if d.Platform == "ios" {
-				cd := jato.NetToCiscoIOSDevice(d)
+				cd := driver.NewCiscoIOSDevice(d)
 				ciscoIOSDevices = append(ciscoIOSDevices, cd)
 			}
 		}
@@ -51,10 +54,10 @@ func main() {
 
 	if !cliParams.NoOp {
 
-		results := []jato.Result{}
+		results := []data.Result{}
 
 		var wg sync.WaitGroup
-		ch := make(chan jato.Result)
+		ch := make(chan data.Result)
 		defer close(ch)
 
 		wg.Add(len(ciscoIOSDevices))
@@ -62,9 +65,9 @@ func main() {
 			dev := dev // lock the host or the same host can run more than once
 			dev.Init()
 			if dev.Connector == "telnet" {
-				go jato.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
+				go network.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
 			} else if dev.Connector == "ssh" {
-				go jato.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
 			}
 		}
 
@@ -90,8 +93,8 @@ func main() {
 			}
 		}
 
-		jato.WriteToFile(results)
-		jato.WriteToJSONFile(results)
+		core.WriteToFile(results)
+		core.WriteToJSONFile(results)
 	}
 
 }

@@ -1,4 +1,4 @@
-package jato
+package constant
 
 import "regexp"
 

@@ -1,4 +1,4 @@
-package jato
+package core
 
 // Expect struct
 // Command: command to run
