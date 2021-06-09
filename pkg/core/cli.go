@@ -1,4 +1,4 @@
-package jato
+package core
 
 import (
 	"flag"
@@ -7,6 +7,8 @@ import (
 	"syscall"
 
 	"github.com/automatico/jato/internal/utils"
+	"github.com/automatico/jato/pkg/data"
+	"github.com/automatico/jato/pkg/driver"
 	"golang.org/x/term"
 )
 
@@ -14,9 +16,9 @@ const version = "2021.06.02"
 
 // Params contain the result of CLI input
 type Params struct {
-	Credentials Credentials
-	Devices     Devices
-	Commands    Commands
+	Credentials data.Credentials
+	Devices     driver.Devices
+	Commands    data.Commands
 	NoOp        bool
 }
 
@@ -38,7 +40,7 @@ func CLI() Params {
 	// Used to collect CLI parameters
 	params := Params{}
 
-	userCreds := Credentials{}.Load()
+	userCreds := data.Credentials{}.Load()
 
 	// User
 	params.Credentials = userCreds

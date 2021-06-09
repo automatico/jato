@@ -1,4 +1,4 @@
-package jato
+package driver
 
 import (
 	"fmt"
@@ -6,6 +6,9 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/automatico/jato/pkg/constant"
+	"github.com/automatico/jato/pkg/data"
+	"github.com/automatico/jato/pkg/network"
 	"github.com/reiver/go-telnet"
 	"golang.org/x/crypto/ssh"
 )
@@ -29,45 +32,11 @@ type CiscoIOSDevice struct {
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
 	DisablePaging     string
-	Credentials
-	SSHParams
-	TelnetParams
-	SSHConn
+	data.Credentials
+	network.SSHParams
+	network.TelnetParams
+	network.SSHConn
 	TelnetConn *telnet.Conn
-}
-
-func (cd *CiscoIOSDevice) Init() {
-	// Prompts
-	if cd.UserPromptRE == nil {
-		cd.UserPromptRE = CiscoUserPromptRE
-	}
-	if cd.SuperUserPromptRE == nil {
-		cd.SuperUserPromptRE = CiscoSuperUserPromptRE
-	}
-	if cd.ConfigPromtRE == nil {
-		cd.ConfigPromtRE = CiscoConfigPromptRE
-	}
-
-	// Paging
-	if cd.DisablePaging == "" {
-		cd.DisablePaging = CiscoDisablePaging
-	}
-
-	// SSH Params
-	if cd.SSHParams.Port == 0 {
-		cd.SSHParams.Port = SSHPort
-	}
-	if !cd.SSHParams.InsecureConnection {
-		cd.SSHParams.InsecureConnection = true
-	}
-	if !cd.SSHParams.InsecureCyphers {
-		cd.SSHParams.InsecureCyphers = true
-	}
-
-	// Telnet Params
-	if cd.TelnetParams.Port == 0 {
-		cd.TelnetParams.Port = TelnetPort
-	}
 }
 
 func (cd *CiscoIOSDevice) ConnectWithTelnet() error {
@@ -77,15 +46,15 @@ func (cd *CiscoIOSDevice) ConnectWithTelnet() error {
 		return err
 	}
 
-	_, err = SendCommandWithTelnet(conn, cd.Username, PasswordRE, 1)
+	_, err = network.SendCommandWithTelnet(conn, cd.Username, constant.PasswordRE, 1)
 	if err != nil {
 		fmt.Println(err)
 	}
-	_, err = SendCommandWithTelnet(conn, cd.Password, cd.SuperUserPromptRE, 1)
+	_, err = network.SendCommandWithTelnet(conn, cd.Password, cd.SuperUserPromptRE, 1)
 	if err != nil {
 		fmt.Println(err)
 	}
-	_, err = SendCommandWithTelnet(conn, cd.DisablePaging, cd.SuperUserPromptRE, 1)
+	_, err = network.SendCommandWithTelnet(conn, cd.DisablePaging, cd.SuperUserPromptRE, 1)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -99,14 +68,14 @@ func (cd CiscoIOSDevice) DisconnectTelnet() error {
 	return cd.TelnetConn.Close()
 }
 
-func (cd CiscoIOSDevice) SendCommandWithTelnet(cmd string) Result {
+func (cd CiscoIOSDevice) SendCommandWithTelnet(cmd string) data.Result {
 
-	result := Result{}
+	result := data.Result{}
 
 	result.Device = cd.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := SendCommandWithTelnet(cd.TelnetConn, cmd, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandWithTelnet(cd.TelnetConn, cmd, cd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		return result
@@ -117,14 +86,14 @@ func (cd CiscoIOSDevice) SendCommandWithTelnet(cmd string) Result {
 	return result
 }
 
-func (cd CiscoIOSDevice) SendCommandsWithTelnet(commands []string) Result {
+func (cd CiscoIOSDevice) SendCommandsWithTelnet(commands []string) data.Result {
 
-	result := Result{}
+	result := data.Result{}
 
 	result.Device = cd.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := SendCommandsWithTelnet(cd.TelnetConn, commands, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandsWithTelnet(cd.TelnetConn, commands, cd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		return result
@@ -137,9 +106,9 @@ func (cd CiscoIOSDevice) SendCommandsWithTelnet(commands []string) Result {
 
 func (cd *CiscoIOSDevice) ConnectWithSSH() error {
 
-	sshConn := SSHConn{}
+	sshConn := network.SSHConn{}
 
-	clientConfig := SSHClientConfig(
+	clientConfig := network.SSHClientConfig(
 		cd.Credentials.Username,
 		cd.Credentials.Password,
 		cd.SSHParams.InsecureConnection,
@@ -184,7 +153,7 @@ func (cd *CiscoIOSDevice) ConnectWithSSH() error {
 		fmt.Println(err)
 	}
 
-	readSSH(stdOut, cd.SuperUserPromptRE, 2)
+	network.ReadSSH(stdOut, cd.SuperUserPromptRE, 2)
 
 	sshConn.Session = session
 	sshConn.StdIn = stdIn
@@ -201,14 +170,14 @@ func (cd CiscoIOSDevice) DisconnectSSH() error {
 	return cd.SSHConn.Session.Close()
 }
 
-func (cd CiscoIOSDevice) SendCommandWithSSH(command string) Result {
+func (cd CiscoIOSDevice) SendCommandWithSSH(command string) data.Result {
 
-	result := Result{}
+	result := data.Result{}
 
 	result.Device = cd.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := SendCommandWithSSH(cd.SSHConn, command, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandWithSSH(cd.SSHConn, command, cd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		return result
@@ -219,14 +188,14 @@ func (cd CiscoIOSDevice) SendCommandWithSSH(command string) Result {
 	return result
 }
 
-func (cd CiscoIOSDevice) SendCommandsWithSSH(commands []string) Result {
+func (cd CiscoIOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 
-	result := Result{}
+	result := data.Result{}
 
 	result.Device = cd.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := SendCommandsWithSSH(cd.SSHConn, commands, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandsWithSSH(cd.SSHConn, commands, cd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		return result
@@ -235,4 +204,43 @@ func (cd CiscoIOSDevice) SendCommandsWithSSH(commands []string) Result {
 	result.CommandOutputs = cmdOut
 	result.OK = true
 	return result
+}
+
+// NewCiscoIOSDevice takes a NetDevice and initializes
+// a CiscoIOSDevice.
+func NewCiscoIOSDevice(nd NetDevice) CiscoIOSDevice {
+	cd := CiscoIOSDevice{}
+	cd.IP = nd.IP
+	cd.Name = nd.Name
+	cd.Vendor = nd.Vendor
+	cd.Platform = nd.Platform
+	cd.Connector = nd.Connector
+	cd.Credentials = nd.Credentials
+	cd.SSHParams = nd.SSHParams
+	cd.TelnetParams = nd.TelnetParams
+
+	// Prompts
+	cd.UserPromptRE = CiscoUserPromptRE
+	cd.SuperUserPromptRE = CiscoSuperUserPromptRE
+	cd.ConfigPromtRE = CiscoConfigPromptRE
+
+	// Paging
+	cd.DisablePaging = CiscoDisablePaging
+
+	// SSH Params
+	if cd.SSHParams.Port == 0 {
+		cd.SSHParams.Port = constant.SSHPort
+	}
+	if !cd.SSHParams.InsecureConnection {
+		cd.SSHParams.InsecureConnection = true
+	}
+	if !cd.SSHParams.InsecureCyphers {
+		cd.SSHParams.InsecureCyphers = true
+	}
+
+	// Telnet Params
+	if cd.TelnetParams.Port == 0 {
+		cd.TelnetParams.Port = constant.TelnetPort
+	}
+	return cd
 }

@@ -1,4 +1,4 @@
-package jato
+package network
 
 import (
 	"fmt"
@@ -8,11 +8,8 @@ import (
 	"time"
 
 	"github.com/automatico/jato/internal/utils"
+	"github.com/automatico/jato/pkg/data"
 	"golang.org/x/crypto/ssh"
-)
-
-var (
-	SSHPort int = 22
 )
 
 type SSHParams struct {
@@ -29,7 +26,7 @@ type SSHConn struct {
 
 type SSHDevice interface {
 	ConnectWithSSH() error
-	SendCommandsWithSSH([]string) Result
+	SendCommandsWithSSH([]string) data.Result
 	DisconnectSSH() error
 }
 
@@ -49,9 +46,9 @@ func SSHClientConfig(username string, password string, insecureConnection bool, 
 	return config
 }
 
-func SendCommandsWithSSH(conn SSHConn, commands []string, expect *regexp.Regexp, timeout int64) ([]CommandOutput, error) {
+func SendCommandsWithSSH(conn SSHConn, commands []string, expect *regexp.Regexp, timeout int64) ([]data.CommandOutput, error) {
 
-	cmdOut := []CommandOutput{}
+	cmdOut := []data.CommandOutput{}
 
 	for _, cmd := range commands {
 		res, err := SendCommandWithSSH(conn, cmd, expect, timeout)
@@ -65,13 +62,13 @@ func SendCommandsWithSSH(conn SSHConn, commands []string, expect *regexp.Regexp,
 
 }
 
-func SendCommandWithSSH(conn SSHConn, cmd string, expect *regexp.Regexp, timeout int64) (CommandOutput, error) {
-	cmdOut := CommandOutput{}
+func SendCommandWithSSH(conn SSHConn, cmd string, expect *regexp.Regexp, timeout int64) (data.CommandOutput, error) {
+	cmdOut := data.CommandOutput{}
 
-	_, err := writeSSH(conn.StdIn, cmd)
+	_, err := WriteSSH(conn.StdIn, cmd)
 	time.Sleep(time.Millisecond * 3)
 
-	res := readSSH(conn.StdOut, expect, timeout)
+	res := ReadSSH(conn.StdOut, expect, timeout)
 	if err != nil {
 		return cmdOut, err
 	}
@@ -83,12 +80,12 @@ func SendCommandWithSSH(conn SSHConn, cmd string, expect *regexp.Regexp, timeout
 	return cmdOut, nil
 }
 
-func writeSSH(stdIn io.Writer, cmd string) (int, error) {
+func WriteSSH(stdIn io.Writer, cmd string) (int, error) {
 	i, err := stdIn.Write([]byte(cmd + "\r"))
 	return i, err
 }
 
-func readSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
+func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 	ch := make(chan string)
 
 	go func(stdOut io.Reader, expect *regexp.Regexp) {
@@ -123,7 +120,7 @@ func readSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 	return <-ch
 }
 
-func RunWithSSH(sd SSHDevice, commands []string, ch chan Result, wg *sync.WaitGroup) {
+func RunWithSSH(sd SSHDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
 	err := sd.ConnectWithSSH()
 	if err != nil {
 		fmt.Println(err)

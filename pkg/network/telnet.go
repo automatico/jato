@@ -1,4 +1,4 @@
-package jato
+package network
 
 import (
 	"errors"
@@ -9,10 +9,9 @@ import (
 	"time"
 
 	"github.com/automatico/jato/internal/utils"
+	"github.com/automatico/jato/pkg/data"
 	"github.com/reiver/go-telnet"
 )
-
-const TelnetPort int = 23
 
 type TelnetParams struct {
 	Port int
@@ -20,13 +19,13 @@ type TelnetParams struct {
 
 type TelnetDevice interface {
 	ConnectWithTelnet() error
-	SendCommandsWithTelnet([]string) Result
+	SendCommandsWithTelnet([]string) data.Result
 	DisconnectTelnet() error
 }
 
-func SendCommandsWithTelnet(conn *telnet.Conn, commands []string, expect *regexp.Regexp, timeout int64) ([]CommandOutput, error) {
+func SendCommandsWithTelnet(conn *telnet.Conn, commands []string, expect *regexp.Regexp, timeout int64) ([]data.CommandOutput, error) {
 
-	cmdOut := []CommandOutput{}
+	cmdOut := []data.CommandOutput{}
 
 	for _, cmd := range commands {
 		res, err := SendCommandWithTelnet(conn, cmd, expect, timeout)
@@ -40,14 +39,14 @@ func SendCommandsWithTelnet(conn *telnet.Conn, commands []string, expect *regexp
 
 }
 
-func SendCommandWithTelnet(conn *telnet.Conn, cmd string, expect *regexp.Regexp, timeout int64) (CommandOutput, error) {
+func SendCommandWithTelnet(conn *telnet.Conn, cmd string, expect *regexp.Regexp, timeout int64) (data.CommandOutput, error) {
 
-	cmdOut := CommandOutput{}
+	cmdOut := data.CommandOutput{}
 
-	writeTelnet(conn, cmd)
+	WriteTelnet(conn, cmd)
 	time.Sleep(time.Millisecond * 3)
 
-	res, err := readTelnet(conn, expect, timeout)
+	res, err := ReadTelnet(conn, expect, timeout)
 	if err != nil {
 		return cmdOut, err
 	}
@@ -59,7 +58,7 @@ func SendCommandWithTelnet(conn *telnet.Conn, cmd string, expect *regexp.Regexp,
 	return cmdOut, nil
 }
 
-func writeTelnet(w io.Writer, s string) error {
+func WriteTelnet(w io.Writer, s string) error {
 	_, err := w.Write([]byte(s + "\n"))
 	if err != nil {
 		return err
@@ -67,7 +66,7 @@ func writeTelnet(w io.Writer, s string) error {
 	return nil
 }
 
-func readTelnet(r io.Reader, expect *regexp.Regexp, timeout int64) (string, error) {
+func ReadTelnet(r io.Reader, expect *regexp.Regexp, timeout int64) (string, error) {
 	maxBuf := 8192
 	tmp := make([]byte, 1)
 	result := make([]byte, 0, maxBuf)
@@ -94,7 +93,7 @@ func readTelnet(r io.Reader, expect *regexp.Regexp, timeout int64) (string, erro
 	return string(result), nil
 }
 
-func RunWithTelnet(td TelnetDevice, commands []string, ch chan Result, wg *sync.WaitGroup) {
+func RunWithTelnet(td TelnetDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
 	err := td.ConnectWithTelnet()
 	if err != nil {
 		fmt.Println(err)

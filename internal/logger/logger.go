@@ -6,26 +6,26 @@ import (
 )
 
 var (
-	WarningLogger *log.Logger
-	InfoLogger    *log.Logger
-	ErrorLogger   *log.Logger
+	warningLogger *log.Logger
+	infoLogger    *log.Logger
+	errorLogger   *log.Logger
 )
 
 func init() {
 
-	InfoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime)
-	WarningLogger = log.New(os.Stderr, "WARNING: ", log.Ldate|log.Ltime)
-	ErrorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime)
+	infoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime)
+	warningLogger = log.New(os.Stderr, "WARNING: ", log.Ldate|log.Ltime)
+	errorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime)
 }
 
 func Info(s string) {
-	InfoLogger.Println(s)
+	infoLogger.Println(s)
 }
 
 func Warning(s string) {
-	WarningLogger.Println(s)
+	warningLogger.Println(s)
 }
 
 func Error(s string) {
-	ErrorLogger.Println(s)
+	errorLogger.Println(s)
 }
