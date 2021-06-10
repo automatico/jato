@@ -85,7 +85,8 @@ func ReadTelnet(r io.Reader, expect *regexp.Regexp, timeout int64) (string, erro
 			}
 			return string(result), err
 		}
-		fmt.Print(string(tmp))
+		// Uncomment for testing
+		// fmt.Print(string(tmp))
 		result = append(result, tmp[:n]...)
 		if expect.MatchString(string(result)) {
 			break
