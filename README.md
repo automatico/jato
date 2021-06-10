@@ -8,6 +8,7 @@ Go ~v1.11+
 | Vendor  | Platform | SSH | Telnet |
 |---------|----------|-----|--------|
 | Cisco   | IOS      | :heavy_check_mark: | :heavy_check_mark: |
+| Cisco   | SMB      | :heavy_check_mark: | :red_circle: |
 | Juniper | Junos    | :heavy_check_mark: | :x: |
 | Arista  | EOS      | :heavy_check_mark: | :x: |
 
