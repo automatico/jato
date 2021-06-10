@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	AristaUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.-]{1,63}>$`)
-	AristaSuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.-]{1,63}#$`)
-	AristaConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.-]{1,63}\(config[a-z0-9-]{0,63}\)#$`)
+	AristaUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,63}>$`)
+	AristaSuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,63}#$`)
+	AristaConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,63}\(config[a-z0-9-]{0,63}\)#$`)
 )
 
 // AristaEOSDevice implements the TelnetDevice
