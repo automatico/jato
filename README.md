@@ -12,9 +12,9 @@ Go ~v1.11+
 | Juniper | Junos    | :heavy_check_mark: | :x: |
 | Arista  | EOS      | :heavy_check_mark: | :x: |
 
-* :heavy_check_mark: - Implemented
-* :x: - Not Implemented, but planned
-* :red_circle: - Not planned
+* :heavy_check_mark: - Supported
+* :x: - Not Supported, but planned
+* :red_circle: - Not Supported
 
 ## Setup
 
