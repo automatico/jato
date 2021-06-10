@@ -13,7 +13,7 @@ Go ~v1.11+
 | Arista  | EOS      | :heavy_check_mark: | :x: |
 
 * :heavy_check_mark: - Supported
-* :x: - Not Supported, but planned
+* :x: - Support planned, but not yet implemented
 * :red_circle: - Not Supported
 
 ## Setup
