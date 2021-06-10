@@ -17,7 +17,6 @@ var (
 	CiscoUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)^[a-z0-9.\\-_@()/:]{1,63}>$`)
 	CiscoSuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)^[a-z0-9.\\-_@()/:]{1,63}#$`)
 	CiscoConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)^[a-z0-9.\-_@/:]{1,63}\([a-z0-9.\-@/:\+]{0,32}\)#$`)
-	CiscoDisablePaging     string         = "terminal length 0"
 )
 
 // CiscoIOSDevice implements the TelnetDevice
@@ -31,7 +30,6 @@ type CiscoIOSDevice struct {
 	UserPromptRE      *regexp.Regexp
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
-	DisablePaging     string
 	data.Credentials
 	network.SSHParams
 	network.TelnetParams
@@ -54,12 +52,11 @@ func (cd *CiscoIOSDevice) ConnectWithTelnet() error {
 	if err != nil {
 		fmt.Println(err)
 	}
-	_, err = network.SendCommandWithTelnet(conn, cd.DisablePaging, cd.SuperUserPromptRE, 1)
-	if err != nil {
-		fmt.Println(err)
-	}
 
 	cd.TelnetConn = conn
+
+	cd.SendCommandWithTelnet("terminal datadump")
+	cd.SendCommandWithTelnet("terminal width 512")
 
 	return nil
 }
@@ -113,6 +110,7 @@ func (cd *CiscoIOSDevice) ConnectWithSSH() error {
 		cd.Credentials.Password,
 		cd.SSHParams.InsecureConnection,
 		cd.SSHParams.InsecureCyphers,
+		cd.SSHParams.InsecureKeyExchange,
 	)
 
 	modes := ssh.TerminalModes{
@@ -161,7 +159,8 @@ func (cd *CiscoIOSDevice) ConnectWithSSH() error {
 
 	cd.SSHConn = sshConn
 
-	cd.SendCommandWithSSH(cd.DisablePaging)
+	cd.SendCommandWithSSH("terminal datadump")
+	cd.SendCommandWithSSH("terminal width 512")
 
 	return nil
 }
@@ -224,9 +223,6 @@ func NewCiscoIOSDevice(nd NetDevice) CiscoIOSDevice {
 	cd.SuperUserPromptRE = CiscoSuperUserPromptRE
 	cd.ConfigPromtRE = CiscoConfigPromptRE
 
-	// Paging
-	cd.DisablePaging = CiscoDisablePaging
-
 	// SSH Params
 	if cd.SSHParams.Port == 0 {
 		cd.SSHParams.Port = constant.SSHPort
@@ -237,7 +233,9 @@ func NewCiscoIOSDevice(nd NetDevice) CiscoIOSDevice {
 	if !cd.SSHParams.InsecureCyphers {
 		cd.SSHParams.InsecureCyphers = true
 	}
-
+	if !cd.SSHParams.InsecureKeyExchange {
+		cd.SSHParams.InsecureKeyExchange = true
+	}
 	// Telnet Params
 	if cd.TelnetParams.Port == 0 {
 		cd.TelnetParams.Port = constant.TelnetPort
