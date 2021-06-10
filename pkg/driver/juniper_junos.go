@@ -16,7 +16,6 @@ var (
 	JuniperUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.\-_@()/:]{1,63}>\s$`)
 	JuniperSuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.\-_@()/:]{1,63}>\s$`)
 	JuniperConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)(\[edit\]\n){0,1}[a-z0-9.\-_@()/:]{1,63}#\s?$`)
-	JuniperDisablePaging     string         = "set cli screen-length 0"
 )
 
 // JuniperJunosDevice implements the TelnetDevice
@@ -30,7 +29,6 @@ type JuniperJunosDevice struct {
 	UserPromptRE      *regexp.Regexp
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
-	DisablePaging     string
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
@@ -45,6 +43,7 @@ func (jd *JuniperJunosDevice) ConnectWithSSH() error {
 		jd.Credentials.Password,
 		jd.SSHParams.InsecureConnection,
 		jd.SSHParams.InsecureCyphers,
+		jd.SSHParams.InsecureKeyExchange,
 	)
 
 	modes := ssh.TerminalModes{
@@ -93,7 +92,8 @@ func (jd *JuniperJunosDevice) ConnectWithSSH() error {
 
 	jd.SSHConn = sshConn
 
-	jd.SendCommandWithSSH(jd.DisablePaging)
+	jd.SendCommandWithSSH("set cli screen-length 0")
+	jd.SendCommandWithSSH("set cli screen-width 0")
 
 	return nil
 }
@@ -155,9 +155,6 @@ func NewJuniperJunosDevice(nd NetDevice) JuniperJunosDevice {
 	jd.SuperUserPromptRE = JuniperSuperUserPromptRE
 	jd.ConfigPromtRE = JuniperConfigPromptRE
 
-	// Paging
-	jd.DisablePaging = JuniperDisablePaging
-
 	// SSH Params
 	if jd.SSHParams.Port == 0 {
 		jd.SSHParams.Port = constant.SSHPort
@@ -168,6 +165,8 @@ func NewJuniperJunosDevice(nd NetDevice) JuniperJunosDevice {
 	if !jd.SSHParams.InsecureCyphers {
 		jd.SSHParams.InsecureCyphers = true
 	}
-
+	if !jd.SSHParams.InsecureKeyExchange {
+		jd.SSHParams.InsecureKeyExchange = true
+	}
 	return jd
 }

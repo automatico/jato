@@ -16,7 +16,6 @@ var (
 	AristaUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.-]{1,63}>$`)
 	AristaSuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.-]{1,63}#$`)
 	AristaConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.-]{1,63}\(config[a-z0-9-]{0,63}\)#$`)
-	AristaDisablePaging     string         = "terminal length 0"
 )
 
 // AristaEOSDevice implements the TelnetDevice
@@ -30,7 +29,6 @@ type AristaEOSDevice struct {
 	UserPromptRE      *regexp.Regexp
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
-	DisablePaging     string
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
@@ -45,6 +43,7 @@ func (ad *AristaEOSDevice) ConnectWithSSH() error {
 		ad.Credentials.Password,
 		ad.SSHParams.InsecureConnection,
 		ad.SSHParams.InsecureCyphers,
+		ad.SSHParams.InsecureKeyExchange,
 	)
 
 	modes := ssh.TerminalModes{
@@ -93,7 +92,8 @@ func (ad *AristaEOSDevice) ConnectWithSSH() error {
 
 	ad.SSHConn = sshConn
 
-	ad.SendCommandWithSSH(ad.DisablePaging)
+	ad.SendCommandWithSSH("terminal length 0")
+	ad.SendCommandWithSSH("terminal width 32767")
 
 	return nil
 }
@@ -155,9 +155,6 @@ func NewAristaEOSDevice(nd NetDevice) AristaEOSDevice {
 	ad.SuperUserPromptRE = AristaSuperUserPromptRE
 	ad.ConfigPromtRE = AristaConfigPromptRE
 
-	// Paging
-	ad.DisablePaging = AristaDisablePaging
-
 	// SSH Params
 	if ad.SSHParams.Port == 0 {
 		ad.SSHParams.Port = constant.SSHPort
@@ -168,6 +165,8 @@ func NewAristaEOSDevice(nd NetDevice) AristaEOSDevice {
 	if !ad.SSHParams.InsecureCyphers {
 		ad.SSHParams.InsecureCyphers = true
 	}
-
+	if !ad.SSHParams.InsecureKeyExchange {
+		ad.SSHParams.InsecureKeyExchange = true
+	}
 	return ad
 }

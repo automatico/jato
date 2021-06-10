@@ -13,9 +13,10 @@ import (
 )
 
 type SSHParams struct {
-	Port               int
-	InsecureConnection bool
-	InsecureCyphers    bool
+	Port                int
+	InsecureConnection  bool
+	InsecureCyphers     bool
+	InsecureKeyExchange bool
 }
 
 type SSHConn struct {
@@ -30,7 +31,7 @@ type SSHDevice interface {
 	DisconnectSSH() error
 }
 
-func SSHClientConfig(username string, password string, insecureConnection bool, insecureCyphers bool) *ssh.ClientConfig {
+func SSHClientConfig(username string, password string, insecureConnection bool, insecureCyphers bool, InsecureKeyExchange bool) *ssh.ClientConfig {
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -42,6 +43,13 @@ func SSHClientConfig(username string, password string, insecureConnection bool, 
 	}
 	if insecureCyphers {
 		config.Config.Ciphers = append(config.Config.Ciphers, "aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-cbc", "aes192-cbc", "aes256-cbc", "3des-cbc", "des-cbc")
+	}
+	if InsecureKeyExchange {
+		config.KeyExchanges = append(
+			config.KeyExchanges,
+			"diffie-hellman-group-exchange-sha256",
+			"diffie-hellman-group-exchange-sha1",
+		)
 	}
 	return config
 }
