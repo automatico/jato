@@ -9,6 +9,7 @@ import (
 	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
+	"github.com/reiver/go-telnet"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -31,7 +32,74 @@ type AristaEOSDevice struct {
 	ConfigPromtRE     *regexp.Regexp
 	data.Credentials
 	network.SSHParams
+	network.TelnetParams
 	network.SSHConn
+	TelnetConn *telnet.Conn
+}
+
+func (ad *AristaEOSDevice) ConnectWithTelnet() error {
+
+	// fmt.Printf("%+v", ad)
+	conn, err := telnet.DialTo(fmt.Sprintf("%s:%d", ad.IP, ad.TelnetParams.Port))
+	if err != nil {
+		return err
+	}
+	_, err = network.SendCommandWithTelnet(conn, ad.Username, constant.PasswordRE, 1)
+	if err != nil {
+		fmt.Println(err)
+	}
+	_, err = network.SendCommandWithTelnet(conn, ad.Password, ad.SuperUserPromptRE, 1)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	ad.TelnetConn = conn
+
+	ad.SendCommandWithTelnet("terminal length 0")
+	ad.SendCommandWithTelnet("terminal width 0")
+
+	return nil
+}
+
+func (ad AristaEOSDevice) DisconnectTelnet() error {
+	return ad.TelnetConn.Close()
+}
+
+func (ad AristaEOSDevice) SendCommandWithTelnet(cmd string) data.Result {
+
+	result := data.Result{}
+
+	result.Device = ad.Name
+	result.Timestamp = time.Now().Unix()
+
+	cmdOut, err := network.SendCommandWithTelnet(ad.TelnetConn, cmd, ad.SuperUserPromptRE, 2)
+	if err != nil {
+		result.OK = false
+		result.Error = err
+		return result
+	}
+
+	result.CommandOutputs = append(result.CommandOutputs, cmdOut)
+	result.OK = true
+	return result
+}
+
+func (ad AristaEOSDevice) SendCommandsWithTelnet(commands []string) data.Result {
+
+	result := data.Result{}
+
+	result.Device = ad.Name
+	result.Timestamp = time.Now().Unix()
+
+	cmdOut, err := network.SendCommandsWithTelnet(ad.TelnetConn, commands, ad.SuperUserPromptRE, 2)
+	if err != nil {
+		result.OK = false
+		return result
+	}
+
+	result.CommandOutputs = cmdOut
+	result.OK = true
+	return result
 }
 
 func (ad *AristaEOSDevice) ConnectWithSSH() error {
@@ -163,10 +231,14 @@ func NewAristaEOSDevice(nd NetDevice) AristaEOSDevice {
 		ad.SSHParams.InsecureConnection = true
 	}
 	if !ad.SSHParams.InsecureCyphers {
-		ad.SSHParams.InsecureCyphers = true
+		ad.SSHParams.InsecureCyphers = false
 	}
 	if !ad.SSHParams.InsecureKeyExchange {
-		ad.SSHParams.InsecureKeyExchange = true
+		ad.SSHParams.InsecureKeyExchange = false
+	}
+	// Telnet Params
+	if ad.TelnetParams.Port == 0 {
+		ad.TelnetParams.Port = constant.TelnetPort
 	}
 	return ad
 }

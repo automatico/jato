@@ -9,6 +9,7 @@ import (
 	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
+	"github.com/reiver/go-telnet"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -31,7 +32,82 @@ type JuniperJunosDevice struct {
 	ConfigPromtRE     *regexp.Regexp
 	data.Credentials
 	network.SSHParams
+	network.TelnetParams
 	network.SSHConn
+	TelnetConn *telnet.Conn
+}
+
+func (jd *JuniperJunosDevice) ConnectWithTelnet() error {
+
+	// fmt.Printf("%+v", ad)
+	conn, err := telnet.DialTo(fmt.Sprintf("%s:%d", jd.IP, jd.TelnetParams.Port))
+	if err != nil {
+		return err
+	}
+	time.Sleep(2 * time.Second)
+
+	fmt.Println("HERE")
+	network.WriteTelnet(conn, "")
+	network.WriteTelnet(conn, "")
+	network.WriteTelnet(conn, "")
+	network.ReadTelnet(conn, constant.LoginRE, 2)
+	_, err = network.SendCommandWithTelnet(conn, jd.Username, constant.PasswordRE, 1)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	_, err = network.SendCommandWithTelnet(conn, jd.Password, jd.SuperUserPromptRE, 1)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	jd.TelnetConn = conn
+
+	jd.SendCommandWithTelnet("set cli screen-length 0")
+	jd.SendCommandWithTelnet("set cli screen-width 0")
+
+	return nil
+}
+
+func (jd JuniperJunosDevice) DisconnectTelnet() error {
+	return jd.TelnetConn.Close()
+}
+
+func (jd JuniperJunosDevice) SendCommandWithTelnet(cmd string) data.Result {
+
+	result := data.Result{}
+
+	result.Device = jd.Name
+	result.Timestamp = time.Now().Unix()
+
+	cmdOut, err := network.SendCommandWithTelnet(jd.TelnetConn, cmd, jd.SuperUserPromptRE, 2)
+	if err != nil {
+		result.OK = false
+		result.Error = err
+		return result
+	}
+
+	result.CommandOutputs = append(result.CommandOutputs, cmdOut)
+	result.OK = true
+	return result
+}
+
+func (jd JuniperJunosDevice) SendCommandsWithTelnet(commands []string) data.Result {
+
+	result := data.Result{}
+
+	result.Device = jd.Name
+	result.Timestamp = time.Now().Unix()
+
+	cmdOut, err := network.SendCommandsWithTelnet(jd.TelnetConn, commands, jd.SuperUserPromptRE, 2)
+	if err != nil {
+		result.OK = false
+		return result
+	}
+
+	result.CommandOutputs = cmdOut
+	result.OK = true
+	return result
 }
 
 func (jd *JuniperJunosDevice) ConnectWithSSH() error {
@@ -167,6 +243,10 @@ func NewJuniperJunosDevice(nd NetDevice) JuniperJunosDevice {
 	}
 	if !jd.SSHParams.InsecureKeyExchange {
 		jd.SSHParams.InsecureKeyExchange = true
+	}
+	// Telnet Params
+	if jd.TelnetParams.Port == 0 {
+		jd.TelnetParams.Port = constant.TelnetPort
 	}
 	return jd
 }

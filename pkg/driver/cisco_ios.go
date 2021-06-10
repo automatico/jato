@@ -159,8 +159,8 @@ func (cd *CiscoIOSDevice) ConnectWithSSH() error {
 
 	cd.SSHConn = sshConn
 
-	cd.SendCommandWithSSH("terminal datadump")
-	cd.SendCommandWithSSH("terminal width 512")
+	cd.SendCommandWithSSH("terminal length 0")
+	cd.SendCommandWithSSH("terminal width 0")
 
 	return nil
 }

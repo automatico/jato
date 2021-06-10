@@ -67,11 +67,14 @@ func WriteTelnet(w io.Writer, s string) error {
 }
 
 func ReadTelnet(r io.Reader, expect *regexp.Regexp, timeout int64) (string, error) {
+
 	maxBuf := 8192
 	tmp := make([]byte, 1)
 	result := make([]byte, 0, maxBuf)
 
 	start := time.Now()
+	fmt.Println("here")
+	time.Sleep(2 * time.Second)
 	for i := 0; i < maxBuf; i++ {
 		if time.Since(start) > time.Second*time.Duration(timeout) {
 			err := errors.New("timeout reading from buffer")
@@ -85,8 +88,9 @@ func ReadTelnet(r io.Reader, expect *regexp.Regexp, timeout int64) (string, erro
 			}
 			return string(result), err
 		}
-		fmt.Print(string(tmp))
+
 		result = append(result, tmp[:n]...)
+		fmt.Println(result)
 		if expect.MatchString(string(result)) {
 			break
 		}
