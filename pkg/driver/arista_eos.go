@@ -163,10 +163,10 @@ func NewAristaEOSDevice(nd NetDevice) AristaEOSDevice {
 		ad.SSHParams.InsecureConnection = true
 	}
 	if !ad.SSHParams.InsecureCyphers {
-		ad.SSHParams.InsecureCyphers = true
+		ad.SSHParams.InsecureCyphers = false
 	}
 	if !ad.SSHParams.InsecureKeyExchange {
-		ad.SSHParams.InsecureKeyExchange = true
+		ad.SSHParams.InsecureKeyExchange = false
 	}
 	return ad
 }

@@ -163,10 +163,10 @@ func NewJuniperJunosDevice(nd NetDevice) JuniperJunosDevice {
 		jd.SSHParams.InsecureConnection = true
 	}
 	if !jd.SSHParams.InsecureCyphers {
-		jd.SSHParams.InsecureCyphers = true
+		jd.SSHParams.InsecureCyphers = false
 	}
 	if !jd.SSHParams.InsecureKeyExchange {
-		jd.SSHParams.InsecureKeyExchange = true
+		jd.SSHParams.InsecureKeyExchange = false
 	}
 	return jd
 }

@@ -231,10 +231,10 @@ func NewCiscoIOSDevice(nd NetDevice) CiscoIOSDevice {
 		cd.SSHParams.InsecureConnection = true
 	}
 	if !cd.SSHParams.InsecureCyphers {
-		cd.SSHParams.InsecureCyphers = true
+		cd.SSHParams.InsecureCyphers = false
 	}
 	if !cd.SSHParams.InsecureKeyExchange {
-		cd.SSHParams.InsecureKeyExchange = true
+		cd.SSHParams.InsecureKeyExchange = false
 	}
 	// Telnet Params
 	if cd.TelnetParams.Port == 0 {
