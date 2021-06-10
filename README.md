@@ -4,6 +4,17 @@ Manage network devices
 ## Requirements
 Go ~v1.11+
 
+## Supported Platforms
+| Vendor  | Platform | SSH | Telnet |
+|---------|----------|-----|--------|
+| Cisco   | IOS      | :heavy_check_mark: | :heavy_check_mark: |
+| Juniper | Junos    | :heavy_check_mark: | :x: |
+| Arista  | EOS      | :heavy_check_mark: | :x: |
+
+* :heavy_check_mark: - Implemented
+* :x: - Not Implemented, but planned
+* :red_circle: - Not planned
+
 ## Setup
 
 ### Environment variables

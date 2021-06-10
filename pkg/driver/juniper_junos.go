@@ -36,15 +36,15 @@ type JuniperJunosDevice struct {
 	network.SSHConn
 }
 
-func (ad *JuniperJunosDevice) ConnectWithSSH() error {
+func (jd *JuniperJunosDevice) ConnectWithSSH() error {
 
 	sshConn := network.SSHConn{}
 
 	clientConfig := network.SSHClientConfig(
-		ad.Credentials.Username,
-		ad.Credentials.Password,
-		ad.SSHParams.InsecureConnection,
-		ad.SSHParams.InsecureCyphers,
+		jd.Credentials.Username,
+		jd.Credentials.Password,
+		jd.SSHParams.InsecureConnection,
+		jd.SSHParams.InsecureCyphers,
 	)
 
 	modes := ssh.TerminalModes{
@@ -53,7 +53,7 @@ func (ad *JuniperJunosDevice) ConnectWithSSH() error {
 		ssh.TTY_OP_OSPEED: 115200,
 	}
 
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", ad.IP, ad.SSHParams.Port), clientConfig)
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", jd.IP, jd.SSHParams.Port), clientConfig)
 	if err != nil {
 		log.Fatalf("Failed to dial: %s", err)
 	}
@@ -85,31 +85,31 @@ func (ad *JuniperJunosDevice) ConnectWithSSH() error {
 		fmt.Println(err)
 	}
 
-	network.ReadSSH(stdOut, ad.SuperUserPromptRE, 2)
+	network.ReadSSH(stdOut, jd.SuperUserPromptRE, 2)
 
 	sshConn.Session = session
 	sshConn.StdIn = stdIn
 	sshConn.StdOut = stdOut
 
-	ad.SSHConn = sshConn
+	jd.SSHConn = sshConn
 
-	ad.SendCommandWithSSH(ad.DisablePaging)
+	jd.SendCommandWithSSH(jd.DisablePaging)
 
 	return nil
 }
 
-func (ad JuniperJunosDevice) DisconnectSSH() error {
-	return ad.SSHConn.Session.Close()
+func (jd JuniperJunosDevice) DisconnectSSH() error {
+	return jd.SSHConn.Session.Close()
 }
 
-func (ad JuniperJunosDevice) SendCommandWithSSH(command string) data.Result {
+func (jd JuniperJunosDevice) SendCommandWithSSH(command string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = ad.Name
+	result.Device = jd.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandWithSSH(ad.SSHConn, command, ad.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandWithSSH(jd.SSHConn, command, jd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		return result
@@ -120,14 +120,14 @@ func (ad JuniperJunosDevice) SendCommandWithSSH(command string) data.Result {
 	return result
 }
 
-func (ad JuniperJunosDevice) SendCommandsWithSSH(commands []string) data.Result {
+func (jd JuniperJunosDevice) SendCommandsWithSSH(commands []string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = ad.Name
+	result.Device = jd.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandsWithSSH(ad.SSHConn, commands, ad.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandsWithSSH(jd.SSHConn, commands, jd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		return result
@@ -141,33 +141,33 @@ func (ad JuniperJunosDevice) SendCommandsWithSSH(commands []string) data.Result 
 // NewJuniperJunosDevice takes a NetDevice and initializes
 // a JuniperJunosDevice.
 func NewJuniperJunosDevice(nd NetDevice) JuniperJunosDevice {
-	ad := JuniperJunosDevice{}
-	ad.IP = nd.IP
-	ad.Name = nd.Name
-	ad.Vendor = nd.Vendor
-	ad.Platform = nd.Platform
-	ad.Connector = nd.Connector
-	ad.Credentials = nd.Credentials
-	ad.SSHParams = nd.SSHParams
+	jd := JuniperJunosDevice{}
+	jd.IP = nd.IP
+	jd.Name = nd.Name
+	jd.Vendor = nd.Vendor
+	jd.Platform = nd.Platform
+	jd.Connector = nd.Connector
+	jd.Credentials = nd.Credentials
+	jd.SSHParams = nd.SSHParams
 
 	// Prompts
-	ad.UserPromptRE = JuniperUserPromptRE
-	ad.SuperUserPromptRE = JuniperSuperUserPromptRE
-	ad.ConfigPromtRE = JuniperConfigPromptRE
+	jd.UserPromptRE = JuniperUserPromptRE
+	jd.SuperUserPromptRE = JuniperSuperUserPromptRE
+	jd.ConfigPromtRE = JuniperConfigPromptRE
 
 	// Paging
-	ad.DisablePaging = JuniperDisablePaging
+	jd.DisablePaging = JuniperDisablePaging
 
 	// SSH Params
-	if ad.SSHParams.Port == 0 {
-		ad.SSHParams.Port = constant.SSHPort
+	if jd.SSHParams.Port == 0 {
+		jd.SSHParams.Port = constant.SSHPort
 	}
-	if !ad.SSHParams.InsecureConnection {
-		ad.SSHParams.InsecureConnection = true
+	if !jd.SSHParams.InsecureConnection {
+		jd.SSHParams.InsecureConnection = true
 	}
-	if !ad.SSHParams.InsecureCyphers {
-		ad.SSHParams.InsecureCyphers = true
+	if !jd.SSHParams.InsecureCyphers {
+		jd.SSHParams.InsecureCyphers = true
 	}
 
-	return ad
+	return jd
 }
