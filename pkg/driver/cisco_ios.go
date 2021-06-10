@@ -55,7 +55,7 @@ func (cd *CiscoIOSDevice) ConnectWithTelnet() error {
 
 	cd.TelnetConn = conn
 
-	cd.SendCommandWithTelnet("terminal datadump")
+	cd.SendCommandWithTelnet("terminal length 0")
 	cd.SendCommandWithTelnet("terminal width 512")
 
 	return nil
