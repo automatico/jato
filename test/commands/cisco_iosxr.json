@@ -1,0 +1,9 @@
+{
+  "commands": [
+    "show version",
+    "show ip interface brief",
+    "show arp",
+    "show cdp neighbors",
+    "show running-config"
+  ]
+}
