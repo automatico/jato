@@ -11,6 +11,7 @@ Go ~v1.11+
 | Aruba   | AOS-CX   | :heavy_check_mark: | :red_circle: |
 | Cisco   | IOS      | :heavy_check_mark: | :heavy_check_mark: |
 | Cisco   | IOS-XR   | :heavy_check_mark: | :red_circle: |
+| Cisco   | NXOS     | :heavy_check_mark: | :red_circle: |
 | Cisco   | SMB      | :heavy_check_mark: | :red_circle: |
 | Juniper | Junos    | :heavy_check_mark: | :x: |
 

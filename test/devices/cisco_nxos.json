@@ -1,0 +1,5 @@
+{
+  "devices": [
+    {"name": "nsox-1", "ip": "192.168.255.163", "vendor": "cisco", "platform": "nxos", "connector": "ssh"}
+  ]
+}
