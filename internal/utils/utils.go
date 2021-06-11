@@ -20,6 +20,9 @@ func Underscorer(s string) string {
 // a string. Strings are split on '\r\n' line endings
 func CleanOutput(s string) string {
 	slice := strings.Split(s, "\r\n")
+	if len(slice) <= 1 {
+		return s
+	}
 	middle := slice[1 : len(slice)-1]
 	return strings.Join(middle, "\r\n")
 }
