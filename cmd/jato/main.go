@@ -18,6 +18,7 @@ import (
 var aristaEOSDevices []driver.AristaEOSDevice
 var arubaAOSCXDevices []driver.ArubaAOSCXDevice
 var ciscoIOSDevices []driver.CiscoIOSDevice
+var ciscoIOSXRDevices []driver.CiscoIOSXRDevice
 var ciscoSMBDevices []driver.CiscoSMBDevice
 var juniperJunosDevices []driver.JuniperJunosDevice
 
@@ -59,6 +60,9 @@ func main() {
 		case "cisco_ios":
 			cd := driver.NewCiscoIOSDevice(d)
 			ciscoIOSDevices = append(ciscoIOSDevices, cd)
+		case "cisco_iosxr":
+			cd := driver.NewCiscoIOSXRDevice(d)
+			ciscoIOSXRDevices = append(ciscoIOSXRDevices, cd)
 		case "cisco_smb":
 			cd := driver.NewCiscoSMBDevice(d)
 			ciscoSMBDevices = append(ciscoSMBDevices, cd)
@@ -107,6 +111,15 @@ func main() {
 			}
 		}
 
+		wg.Add(len(ciscoIOSXRDevices))
+		for _, dev := range ciscoIOSXRDevices {
+			dev := dev // lock the host or the same host can run more than once
+			switch dev.Connector {
+			case "ssh":
+				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			}
+		}
+
 		wg.Add(len(ciscoSMBDevices))
 		for _, dev := range ciscoSMBDevices {
 			dev := dev // lock the host or the same host can run more than once
@@ -128,6 +141,7 @@ func main() {
 		devTotal := len(aristaEOSDevices) +
 			len(arubaAOSCXDevices) +
 			len(ciscoIOSDevices) +
+			len(ciscoIOSXRDevices) +
 			len(ciscoSMBDevices) +
 			len(juniperJunosDevices)
 		for i := 0; i < devTotal; i++ {
