@@ -1,0 +1,5 @@
+{
+  "devices": [
+    {"name": "smb-1", "ip": "192.168.255.154", "vendor": "cisco", "platform": "smb", "connector": "ssh"},
+  ]
+}

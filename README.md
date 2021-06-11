@@ -59,17 +59,28 @@ Create a `devices.json` file with a list of devices to run against
 ```json
 {
   "devices": [
+    {"name": "eos-1", "ip": "192.168.255.152", "vendor": "arista", "platform": "eos", "connector": "ssh"},
+    {"name": "aoscx-1", "ip": "192.168.255.161", "vendor": "aruba", "platform": "aoscx", "connector": "ssh"},
+    {"name": "aireos-1", "ip": "192.168.255.164", "vendor": "cisco", "platform": "aireos", "connector": "ssh"},
     {"name": "iosv-1", "ip": "192.168.255.150", "vendor": "cisco", "platform": "ios", "connector": "telnet"},
-    {"name": "iosv-4", "ip": "192.168.255.154", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
-    {"name": "iosv-5", "ip": "192.168.255.155", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
-    {"name": "iosv-6", "ip": "192.168.255.156", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
-    {"name": "iosv-7", "ip": "192.168.255.157", "vendor": "cisco", "platform": "ios", "connector": "ssh"},
-    {"name": "iosv-8", "ip": "192.168.255.158", "vendor": "cisco", "platform": "ios", "connector": "telnet"},
-    {"name": "iosv-9", "ip": "192.168.255.159", "vendor": "cisco", "platform": "ios", "connector": "telnet"},
-    {"name": "iosv-10", "ip": "192.168.255.160", "vendor": "cisco", "platform": "ios", "connector": "telnet"}
+    {"name": "iosxr-1", "ip": "192.168.255.162", "vendor": "cisco", "platform": "iosxr", "connector": "ssh"},
+    {"name": "nsox-1", "ip": "192.168.255.163", "vendor": "cisco", "platform": "nxos", "connector": "ssh"},
+    {"name": "smb-1", "ip": "192.168.255.154", "vendor": "cisco", "platform": "smb", "connector": "ssh"},
+    {"name": "vmx-1", "ip": "192.168.255.151", "vendor": "juniper", "platform": "junos", "connector": "ssh"}
   ]
 }
 ```
+### Configuration Parameters
+| vendor  | platform | connector   |
+|---------|----------|-------------|
+| arista  | eos      | ssh         |
+| aruba   | aoscx    | ssh         |
+| cisco   | aireos   | ssh         |
+| cisco   | ios      | ssh, telnet |
+| cisco   | iosxr    | ssh         |
+| cisco   | nxos     | ssh         |
+| cisco   | smb      | ssh         |
+| juniper | junos    | ssh         |
 
 ## Run
 Inspect the options available
