@@ -15,9 +15,10 @@ import (
 	"github.com/automatico/jato/pkg/network"
 )
 
+var aristaEOSDevices []driver.AristaEOSDevice
+var arubaAOSCXDevices []driver.ArubaAOSCXDevice
 var ciscoIOSDevices []driver.CiscoIOSDevice
 var ciscoSMBDevices []driver.CiscoSMBDevice
-var aristaEOSDevices []driver.AristaEOSDevice
 var juniperJunosDevices []driver.JuniperJunosDevice
 
 func main() {
@@ -49,15 +50,18 @@ func main() {
 
 		vendorPlatform := fmt.Sprintf("%s_%s", d.Vendor, d.Platform)
 		switch vendorPlatform {
+		case "arista_eos":
+			ad := driver.NewAristaEOSDevice(d)
+			aristaEOSDevices = append(aristaEOSDevices, ad)
+		case "aruba_aoscx":
+			ad := driver.NewArubaAOSCXDevice(d)
+			arubaAOSCXDevices = append(arubaAOSCXDevices, ad)
 		case "cisco_ios":
 			cd := driver.NewCiscoIOSDevice(d)
 			ciscoIOSDevices = append(ciscoIOSDevices, cd)
 		case "cisco_smb":
 			cd := driver.NewCiscoSMBDevice(d)
 			ciscoSMBDevices = append(ciscoSMBDevices, cd)
-		case "arista_eos":
-			ad := driver.NewAristaEOSDevice(d)
-			aristaEOSDevices = append(aristaEOSDevices, ad)
 		case "juniper_junos":
 			jd := driver.NewJuniperJunosDevice(d)
 			juniperJunosDevices = append(juniperJunosDevices, jd)
@@ -73,6 +77,24 @@ func main() {
 		var wg sync.WaitGroup
 		ch := make(chan data.Result)
 		defer close(ch)
+
+		wg.Add(len(arubaAOSCXDevices))
+		for _, dev := range arubaAOSCXDevices {
+			dev := dev // lock the host or the same host can run more than once
+			switch dev.Connector {
+			case "ssh":
+				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			}
+		}
+
+		wg.Add(len(aristaEOSDevices))
+		for _, dev := range aristaEOSDevices {
+			dev := dev // lock the host or the same host can run more than once
+			switch dev.Connector {
+			case "ssh":
+				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			}
+		}
 
 		wg.Add(len(ciscoIOSDevices))
 		for _, dev := range ciscoIOSDevices {
@@ -94,15 +116,6 @@ func main() {
 			}
 		}
 
-		wg.Add(len(aristaEOSDevices))
-		for _, dev := range aristaEOSDevices {
-			dev := dev // lock the host or the same host can run more than once
-			switch dev.Connector {
-			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
-			}
-		}
-
 		wg.Add(len(juniperJunosDevices))
 		for _, dev := range juniperJunosDevices {
 			dev := dev // lock the host or the same host can run more than once
@@ -112,7 +125,11 @@ func main() {
 			}
 		}
 
-		devTotal := len(ciscoIOSDevices) + len(ciscoSMBDevices) + len(aristaEOSDevices) + len(juniperJunosDevices)
+		devTotal := len(aristaEOSDevices) +
+			len(arubaAOSCXDevices) +
+			len(ciscoIOSDevices) +
+			len(ciscoSMBDevices) +
+			len(juniperJunosDevices)
 		for i := 0; i < devTotal; i++ {
 			results = append(results, <-ch)
 		}

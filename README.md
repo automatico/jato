@@ -7,10 +7,12 @@ Go ~v1.11+
 ## Supported Platforms
 | Vendor  | Platform | SSH | Telnet |
 |---------|----------|-----|--------|
+| Arista  | EOS      | :heavy_check_mark: | :x: |
+| Aruba   | AOS-CX   | :heavy_check_mark: | :red_circle: |
 | Cisco   | IOS      | :heavy_check_mark: | :heavy_check_mark: |
 | Cisco   | SMB      | :heavy_check_mark: | :red_circle: |
 | Juniper | Junos    | :heavy_check_mark: | :x: |
-| Arista  | EOS      | :heavy_check_mark: | :x: |
+
 
 * :heavy_check_mark: - Supported
 * :x: - Support planned, but not yet implemented
