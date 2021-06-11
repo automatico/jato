@@ -12,7 +12,7 @@ import (
 	"golang.org/x/term"
 )
 
-const version = "2021.06.07"
+const version = "2021.06.08"
 
 // Params contain the result of CLI input
 type Params struct {

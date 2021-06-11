@@ -17,6 +17,7 @@ import (
 
 var aristaEOSDevices []driver.AristaEOSDevice
 var arubaAOSCXDevices []driver.ArubaAOSCXDevice
+var ciscoAireOSDevices []driver.CiscoAireOSDevice
 var ciscoIOSDevices []driver.CiscoIOSDevice
 var ciscoIOSXRDevices []driver.CiscoIOSXRDevice
 var ciscoNXOSDevices []driver.CiscoNXOSDevice
@@ -58,6 +59,9 @@ func main() {
 		case "aruba_aoscx":
 			ad := driver.NewArubaAOSCXDevice(d)
 			arubaAOSCXDevices = append(arubaAOSCXDevices, ad)
+		case "cisco_aireos":
+			cd := driver.NewCiscoAireOSDevice(d)
+			ciscoAireOSDevices = append(ciscoAireOSDevices, cd)
 		case "cisco_ios":
 			cd := driver.NewCiscoIOSDevice(d)
 			ciscoIOSDevices = append(ciscoIOSDevices, cd)
@@ -86,6 +90,15 @@ func main() {
 		ch := make(chan data.Result)
 		defer close(ch)
 
+		wg.Add(len(aristaEOSDevices))
+		for _, dev := range aristaEOSDevices {
+			dev := dev // lock the host or the same host can run more than once
+			switch dev.Connector {
+			case "ssh":
+				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			}
+		}
+
 		wg.Add(len(arubaAOSCXDevices))
 		for _, dev := range arubaAOSCXDevices {
 			dev := dev // lock the host or the same host can run more than once
@@ -95,8 +108,8 @@ func main() {
 			}
 		}
 
-		wg.Add(len(aristaEOSDevices))
-		for _, dev := range aristaEOSDevices {
+		wg.Add(len(ciscoAireOSDevices))
+		for _, dev := range ciscoAireOSDevices {
 			dev := dev // lock the host or the same host can run more than once
 			switch dev.Connector {
 			case "ssh":
@@ -153,6 +166,7 @@ func main() {
 
 		devTotal := len(aristaEOSDevices) +
 			len(arubaAOSCXDevices) +
+			len(ciscoAireOSDevices) +
 			len(ciscoIOSDevices) +
 			len(ciscoIOSXRDevices) +
 			len(ciscoNXOSDevices) +

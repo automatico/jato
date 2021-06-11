@@ -1,0 +1,9 @@
+{
+  "commands": [
+    "show sysinfo",
+    "show interface summary",
+    "show ap summary",
+    "show wlan summary",
+    "show run-config commands"
+  ]
+}
