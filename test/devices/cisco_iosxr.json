@@ -1,0 +1,5 @@
+{
+  "devices": [
+    {"name": "iosxr-1", "ip": "192.168.255.162", "vendor": "cisco", "platform": "iosxr", "connector": "ssh"}
+  ]
+}
