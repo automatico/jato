@@ -1,5 +1,16 @@
 {
   "devices": [
-    {"name": "smb-1", "ip": "192.168.255.154", "vendor": "cisco", "platform": "smb", "connector": "ssh"},
+    {
+      "name": "smb-1", "ip": "192.168.255.154", "vendor": "cisco", "platform": "smb", "connector": "ssh",
+      "sshParams": {
+        "insecureConnection": true
+      },
+      "variables": {
+        "credentials": "JATO_CISCO_SMB",
+        "groups": [
+          "stuff", "things"
+        ]
+      }
+    }
   ]
 }

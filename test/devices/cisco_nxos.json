@@ -1,12 +1,16 @@
 {
   "devices": [
-    {"name": "nsox-1", "ip": "192.168.255.163", "vendor": "cisco", "platform": "nxos", "connector": "ssh",
-    "variables": {
-      "credentials": "JATO_NXOS",
-      "groups": [
-        "stuff", "things"
-      ]
+    {
+      "name": "nsox-1", "ip": "192.168.255.163", "vendor": "cisco", "platform": "nxos", "connector": "ssh",
+      "sshParams": {
+        "insecureConnection": true
+      },
+      "variables": {
+        "credentials": "JATO_NXOS",
+        "groups": [
+          "stuff", "things"
+        ]
+      }
     }
-  }
   ]
 }

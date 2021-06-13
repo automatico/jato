@@ -1,5 +1,10 @@
 {
   "devices": [
-    {"name": "eos-1", "ip": "192.168.255.152", "vendor": "arista", "platform": "eos", "connector": "ssh"}
+    {
+      "name": "eos-1", "ip": "192.168.255.152", "vendor": "arista", "platform": "eos", "connector": "ssh",
+      "sshParams": {
+        "insecureConnection": true
+      }
+    }
   ]
 }
