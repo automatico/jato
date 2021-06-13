@@ -1,14 +1,11 @@
 package driver
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 	"time"
 
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
-	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -34,82 +31,40 @@ type JuniperJunosDevice struct {
 	data.Variables
 }
 
-func (jd *JuniperJunosDevice) ConnectWithSSH() error {
-
-	sshConn := network.SSHConn{}
+func (d *JuniperJunosDevice) ConnectWithSSH() error {
 
 	clientConfig := network.SSHClientConfig(
-		jd.Credentials.Username,
-		jd.Credentials.Password,
-		jd.SSHParams.InsecureConnection,
-		jd.SSHParams.InsecureCyphers,
-		jd.SSHParams.InsecureKeyExchange,
+		d.Credentials.Username,
+		d.Credentials.Password,
+		d.SSHParams.InsecureConnection,
+		d.SSHParams.InsecureCyphers,
+		d.SSHParams.InsecureKeyExchange,
 	)
 
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 115200,
-		ssh.TTY_OP_OSPEED: 115200,
-	}
+	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", jd.IP, jd.SSHParams.Port), clientConfig)
-	if err != nil {
-		log.Fatalf("Failed to dial: %s", err)
-	}
+	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
 
-	session, err := conn.NewSession()
-	if err != nil {
-		fmt.Println(err)
-	}
+	d.SSHConn = sshConn
 
-	stdOut, err := session.StdoutPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	stdIn, err := session.StdinPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	err = session.RequestPty("xterm", 0, 200, modes)
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	err = session.Shell()
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	network.ReadSSH(stdOut, jd.SuperUserPromptRE, 2)
-
-	sshConn.Session = session
-	sshConn.StdIn = stdIn
-	sshConn.StdOut = stdOut
-
-	jd.SSHConn = sshConn
-
-	jd.SendCommandWithSSH("set cli screen-length 0")
-	jd.SendCommandWithSSH("set cli screen-width 0")
+	d.SendCommandWithSSH("set cli screen-length 0")
+	d.SendCommandWithSSH("set cli screen-width 0")
 
 	return nil
 }
 
-func (jd JuniperJunosDevice) DisconnectSSH() error {
-	return jd.SSHConn.Session.Close()
+func (d JuniperJunosDevice) DisconnectSSH() error {
+	return d.SSHConn.Session.Close()
 }
 
-func (jd JuniperJunosDevice) SendCommandWithSSH(command string) data.Result {
+func (d JuniperJunosDevice) SendCommandWithSSH(command string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = jd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandWithSSH(jd.SSHConn, command, jd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandWithSSH(d.SSHConn, command, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		result.Error = err
@@ -121,14 +76,14 @@ func (jd JuniperJunosDevice) SendCommandWithSSH(command string) data.Result {
 	return result
 }
 
-func (jd JuniperJunosDevice) SendCommandsWithSSH(commands []string) data.Result {
+func (d JuniperJunosDevice) SendCommandsWithSSH(commands []string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = jd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandsWithSSH(jd.SSHConn, commands, jd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandsWithSSH(d.SSHConn, commands, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		result.Error = err
@@ -143,23 +98,23 @@ func (jd JuniperJunosDevice) SendCommandsWithSSH(commands []string) data.Result 
 // NewJuniperJunosDevice takes a NetDevice and initializes
 // a JuniperJunosDevice.
 func NewJuniperJunosDevice(nd NetDevice) JuniperJunosDevice {
-	jd := JuniperJunosDevice{}
-	jd.IP = nd.IP
-	jd.Name = nd.Name
-	jd.Vendor = nd.Vendor
-	jd.Platform = nd.Platform
-	jd.Connector = nd.Connector
-	jd.Credentials = nd.Credentials
-	jd.SSHParams = nd.SSHParams
-	jd.Variables = nd.Variables
+	d := JuniperJunosDevice{}
+	d.IP = nd.IP
+	d.Name = nd.Name
+	d.Vendor = nd.Vendor
+	d.Platform = nd.Platform
+	d.Connector = nd.Connector
+	d.Credentials = nd.Credentials
+	d.SSHParams = nd.SSHParams
+	d.Variables = nd.Variables
 
 	// Prompts
-	jd.UserPromptRE = JuniperUserPromptRE
-	jd.SuperUserPromptRE = JuniperSuperUserPromptRE
-	jd.ConfigPromtRE = JuniperConfigPromptRE
+	d.UserPromptRE = JuniperUserPromptRE
+	d.SuperUserPromptRE = JuniperSuperUserPromptRE
+	d.ConfigPromtRE = JuniperConfigPromptRE
 
 	// SSH Params
-	network.InitSSHParams(&jd.SSHParams)
+	network.InitSSHParams(&d.SSHParams)
 
-	return jd
+	return d
 }

@@ -1,14 +1,11 @@
 package driver
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 	"time"
 
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
-	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -34,81 +31,39 @@ type CiscoAireOSDevice struct {
 	data.Variables
 }
 
-func (cd *CiscoAireOSDevice) ConnectWithSSH() error {
-
-	sshConn := network.SSHConn{}
+func (d *CiscoAireOSDevice) ConnectWithSSH() error {
 
 	clientConfig := network.SSHClientConfig(
-		cd.Credentials.Username,
-		cd.Credentials.Password,
-		cd.SSHParams.InsecureConnection,
-		cd.SSHParams.InsecureCyphers,
-		cd.SSHParams.InsecureKeyExchange,
+		d.Credentials.Username,
+		d.Credentials.Password,
+		d.SSHParams.InsecureConnection,
+		d.SSHParams.InsecureCyphers,
+		d.SSHParams.InsecureKeyExchange,
 	)
 
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 115200,
-		ssh.TTY_OP_OSPEED: 115200,
-	}
+	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cd.IP, cd.SSHParams.Port), clientConfig)
-	if err != nil {
-		log.Fatalf("Failed to dial: %s", err)
-	}
+	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
 
-	session, err := conn.NewSession()
-	if err != nil {
-		fmt.Println(err)
-	}
+	d.SSHConn = sshConn
 
-	stdOut, err := session.StdoutPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	stdIn, err := session.StdinPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	err = session.RequestPty("xterm", 0, 200, modes)
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	err = session.Shell()
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	network.ReadSSH(stdOut, cd.SuperUserPromptRE, 5)
-
-	sshConn.Session = session
-	sshConn.StdIn = stdIn
-	sshConn.StdOut = stdOut
-
-	cd.SSHConn = sshConn
-
-	cd.SendCommandWithSSH("config paging disable")
+	d.SendCommandWithSSH("config paging disable")
 
 	return nil
 }
 
-func (cd CiscoAireOSDevice) DisconnectSSH() error {
-	return cd.SSHConn.Session.Close()
+func (d CiscoAireOSDevice) DisconnectSSH() error {
+	return d.SSHConn.Session.Close()
 }
 
-func (cd CiscoAireOSDevice) SendCommandWithSSH(command string) data.Result {
+func (d CiscoAireOSDevice) SendCommandWithSSH(command string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandWithSSH(cd.SSHConn, command, cd.SuperUserPromptRE, 5)
+	cmdOut, err := network.SendCommandWithSSH(d.SSHConn, command, d.SuperUserPromptRE, 5)
 	if err != nil {
 		result.OK = false
 		result.Error = err
@@ -120,14 +75,14 @@ func (cd CiscoAireOSDevice) SendCommandWithSSH(command string) data.Result {
 	return result
 }
 
-func (cd CiscoAireOSDevice) SendCommandsWithSSH(commands []string) data.Result {
+func (d CiscoAireOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandsWithSSH(cd.SSHConn, commands, cd.SuperUserPromptRE, 5)
+	cmdOut, err := network.SendCommandsWithSSH(d.SSHConn, commands, d.SuperUserPromptRE, 5)
 	if err != nil {
 		result.OK = false
 		result.Error = err
@@ -142,23 +97,23 @@ func (cd CiscoAireOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 // NewCiscoAireOSDevice takes a NetDevice and initializes
 // a CiscoAireOSDevice.
 func NewCiscoAireOSDevice(nd NetDevice) CiscoAireOSDevice {
-	cd := CiscoAireOSDevice{}
-	cd.IP = nd.IP
-	cd.Name = nd.Name
-	cd.Vendor = nd.Vendor
-	cd.Platform = nd.Platform
-	cd.Connector = nd.Connector
-	cd.Credentials = nd.Credentials
-	cd.SSHParams = nd.SSHParams
-	cd.Variables = nd.Variables
+	d := CiscoAireOSDevice{}
+	d.IP = nd.IP
+	d.Name = nd.Name
+	d.Vendor = nd.Vendor
+	d.Platform = nd.Platform
+	d.Connector = nd.Connector
+	d.Credentials = nd.Credentials
+	d.SSHParams = nd.SSHParams
+	d.Variables = nd.Variables
 
 	// Prompts
-	cd.UserPromptRE = CiscoAireOSUserPromptRE
-	cd.SuperUserPromptRE = CiscoAireOSSuperUserPromptRE
-	cd.ConfigPromtRE = CiscoAireOSConfigPromptRE
+	d.UserPromptRE = CiscoAireOSUserPromptRE
+	d.SuperUserPromptRE = CiscoAireOSSuperUserPromptRE
+	d.ConfigPromtRE = CiscoAireOSConfigPromptRE
 
 	// SSH Params
-	network.InitSSHParams(&cd.SSHParams)
+	network.InitSSHParams(&d.SSHParams)
 
-	return cd
+	return d
 }

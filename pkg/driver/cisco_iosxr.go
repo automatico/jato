@@ -31,40 +31,40 @@ type CiscoIOSXRDevice struct {
 	data.Variables
 }
 
-func (cd *CiscoIOSXRDevice) ConnectWithSSH() error {
+func (d *CiscoIOSXRDevice) ConnectWithSSH() error {
 
 	clientConfig := network.SSHClientConfig(
-		cd.Credentials.Username,
-		cd.Credentials.Password,
-		cd.SSHParams.InsecureConnection,
-		cd.SSHParams.InsecureCyphers,
-		cd.SSHParams.InsecureKeyExchange,
+		d.Credentials.Username,
+		d.Credentials.Password,
+		d.SSHParams.InsecureConnection,
+		d.SSHParams.InsecureCyphers,
+		d.SSHParams.InsecureKeyExchange,
 	)
 
-	sshConn := network.ConnectWithSSH(cd.IP, cd.SSHParams.Port, clientConfig)
+	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 
-	network.ReadSSH(sshConn.StdOut, cd.SuperUserPromptRE, 2)
+	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
 
-	cd.SSHConn = sshConn
+	d.SSHConn = sshConn
 
-	cd.SendCommandWithSSH("terminal length 0")
-	cd.SendCommandWithSSH("terminal width 0")
+	d.SendCommandWithSSH("terminal length 0")
+	d.SendCommandWithSSH("terminal width 0")
 
 	return nil
 }
 
-func (cd CiscoIOSXRDevice) DisconnectSSH() error {
-	return cd.SSHConn.Session.Close()
+func (d CiscoIOSXRDevice) DisconnectSSH() error {
+	return d.SSHConn.Session.Close()
 }
 
-func (cd CiscoIOSXRDevice) SendCommandWithSSH(command string) data.Result {
+func (d CiscoIOSXRDevice) SendCommandWithSSH(command string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandWithSSH(cd.SSHConn, command, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandWithSSH(d.SSHConn, command, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		result.Error = err
@@ -76,14 +76,14 @@ func (cd CiscoIOSXRDevice) SendCommandWithSSH(command string) data.Result {
 	return result
 }
 
-func (cd CiscoIOSXRDevice) SendCommandsWithSSH(commands []string) data.Result {
+func (d CiscoIOSXRDevice) SendCommandsWithSSH(commands []string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandsWithSSH(cd.SSHConn, commands, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandsWithSSH(d.SSHConn, commands, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
 		result.Error = err
@@ -98,23 +98,23 @@ func (cd CiscoIOSXRDevice) SendCommandsWithSSH(commands []string) data.Result {
 // NewCiscoIOSXRDevice takes a NetDevice and initializes
 // a CiscoIOSXRDevice.
 func NewCiscoIOSXRDevice(nd NetDevice) CiscoIOSXRDevice {
-	cd := CiscoIOSXRDevice{}
-	cd.IP = nd.IP
-	cd.Name = nd.Name
-	cd.Vendor = nd.Vendor
-	cd.Platform = nd.Platform
-	cd.Connector = nd.Connector
-	cd.Credentials = nd.Credentials
-	cd.SSHParams = nd.SSHParams
-	cd.Variables = nd.Variables
+	d := CiscoIOSXRDevice{}
+	d.IP = nd.IP
+	d.Name = nd.Name
+	d.Vendor = nd.Vendor
+	d.Platform = nd.Platform
+	d.Connector = nd.Connector
+	d.Credentials = nd.Credentials
+	d.SSHParams = nd.SSHParams
+	d.Variables = nd.Variables
 
 	// Prompts
-	cd.UserPromptRE = CiscoXRUserPromptRE
-	cd.SuperUserPromptRE = CiscoXRSuperUserPromptRE
-	cd.ConfigPromtRE = CiscoXRConfigPromptRE
+	d.UserPromptRE = CiscoXRUserPromptRE
+	d.SuperUserPromptRE = CiscoXRSuperUserPromptRE
+	d.ConfigPromtRE = CiscoXRConfigPromptRE
 
 	// SSH Params
-	network.InitSSHParams(&cd.SSHParams)
+	network.InitSSHParams(&d.SSHParams)
 
-	return cd
+	return d
 }
