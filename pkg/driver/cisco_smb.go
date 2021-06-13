@@ -32,6 +32,7 @@ type CiscoSMBDevice struct {
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
+	data.Variables
 }
 
 func (cd *CiscoSMBDevice) ConnectWithSSH() error {
@@ -151,6 +152,7 @@ func NewCiscoSMBDevice(nd NetDevice) CiscoSMBDevice {
 	cd.Connector = nd.Connector
 	cd.Credentials = nd.Credentials
 	cd.SSHParams = nd.SSHParams
+	cd.Variables = nd.Variables
 
 	// Prompts
 	cd.UserPromptRE = CiscoSMBUserPromptRE

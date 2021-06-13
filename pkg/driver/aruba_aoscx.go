@@ -32,6 +32,7 @@ type ArubaAOSCXDevice struct {
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
+	data.Variables
 }
 
 func (ad *ArubaAOSCXDevice) ConnectWithSSH() error {
@@ -148,6 +149,7 @@ func NewArubaAOSCXDevice(nd NetDevice) ArubaAOSCXDevice {
 	ad.Connector = nd.Connector
 	ad.Credentials = nd.Credentials
 	ad.SSHParams = nd.SSHParams
+	ad.Variables = nd.Variables
 
 	// Prompts
 	ad.UserPromptRE = ArubaCXUserPromptRE

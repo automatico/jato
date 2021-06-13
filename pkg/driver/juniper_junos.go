@@ -32,6 +32,7 @@ type JuniperJunosDevice struct {
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
+	data.Variables
 }
 
 func (jd *JuniperJunosDevice) ConnectWithSSH() error {
@@ -149,6 +150,7 @@ func NewJuniperJunosDevice(nd NetDevice) JuniperJunosDevice {
 	jd.Connector = nd.Connector
 	jd.Credentials = nd.Credentials
 	jd.SSHParams = nd.SSHParams
+	jd.Variables = nd.Variables
 
 	// Prompts
 	jd.UserPromptRE = JuniperUserPromptRE

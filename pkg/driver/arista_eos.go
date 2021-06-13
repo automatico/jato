@@ -32,6 +32,7 @@ type AristaEOSDevice struct {
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
+	data.Variables
 }
 
 func (ad *AristaEOSDevice) ConnectWithSSH() error {
@@ -149,6 +150,7 @@ func NewAristaEOSDevice(nd NetDevice) AristaEOSDevice {
 	ad.Connector = nd.Connector
 	ad.Credentials = nd.Credentials
 	ad.SSHParams = nd.SSHParams
+	ad.Variables = nd.Variables
 
 	// Prompts
 	ad.UserPromptRE = AristaUserPromptRE

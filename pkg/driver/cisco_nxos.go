@@ -32,6 +32,7 @@ type CiscoNXOSDevice struct {
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
+	data.Variables
 }
 
 func (cd *CiscoNXOSDevice) ConnectWithSSH() error {
@@ -149,6 +150,7 @@ func NewCiscoNXOSDevice(nd NetDevice) CiscoNXOSDevice {
 	cd.Connector = nd.Connector
 	cd.Credentials = nd.Credentials
 	cd.SSHParams = nd.SSHParams
+	cd.Variables = nd.Variables
 
 	// Prompts
 	cd.UserPromptRE = CiscoNXOSUserPromptRE

@@ -47,10 +47,15 @@ func main() {
 
 	for _, d := range cliParams.Devices.Devices {
 
-		d.Credentials.Username = cliParams.Credentials.Username
-		d.Credentials.Password = cliParams.Credentials.Password
-		d.Credentials.SuperPassword = cliParams.Credentials.SuperPassword
-		d.Credentials.SSHKeyFile = cliParams.Credentials.SSHKeyFile
+		creds := d.Variables.Credentials
+		if creds != "" {
+			d.Credentials = data.GetCredentials(creds)
+		} else {
+			d.Credentials.Username = cliParams.Credentials.Username
+			d.Credentials.Password = cliParams.Credentials.Password
+			d.Credentials.SuperPassword = cliParams.Credentials.SuperPassword
+			d.Credentials.SSHKeyFile = cliParams.Credentials.SSHKeyFile
+		}
 
 		vendorPlatform := fmt.Sprintf("%s_%s", d.Vendor, d.Platform)
 		switch vendorPlatform {
@@ -62,8 +67,6 @@ func main() {
 			arubaAOSCXDevices = append(arubaAOSCXDevices, ad)
 		case "cisco_aireos":
 			cd := driver.NewCiscoAireOSDevice(d)
-			creds := data.GetCredentials(cd.Variables.Credentials)
-			cd.Credentials = creds
 			ciscoAireOSDevices = append(ciscoAireOSDevices, cd)
 		case "cisco_ios":
 			cd := driver.NewCiscoIOSDevice(d)

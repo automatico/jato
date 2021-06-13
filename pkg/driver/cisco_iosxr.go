@@ -32,6 +32,7 @@ type CiscoIOSXRDevice struct {
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
+	data.Variables
 }
 
 func (cd *CiscoIOSXRDevice) ConnectWithSSH() error {
@@ -149,6 +150,7 @@ func NewCiscoIOSXRDevice(nd NetDevice) CiscoIOSXRDevice {
 	cd.Connector = nd.Connector
 	cd.Credentials = nd.Credentials
 	cd.SSHParams = nd.SSHParams
+	cd.Variables = nd.Variables
 
 	// Prompts
 	cd.UserPromptRE = CiscoXRUserPromptRE

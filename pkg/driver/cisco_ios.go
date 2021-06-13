@@ -35,6 +35,7 @@ type CiscoIOSDevice struct {
 	network.TelnetParams
 	network.SSHConn
 	TelnetConn *telnet.Conn
+	data.Variables
 }
 
 func (cd *CiscoIOSDevice) ConnectWithTelnet() error {
@@ -217,6 +218,7 @@ func NewCiscoIOSDevice(nd NetDevice) CiscoIOSDevice {
 	cd.Credentials = nd.Credentials
 	cd.SSHParams = nd.SSHParams
 	cd.TelnetParams = nd.TelnetParams
+	cd.Variables = nd.Variables
 
 	// Prompts
 	cd.UserPromptRE = CiscoUserPromptRE
