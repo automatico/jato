@@ -32,6 +32,7 @@ type CiscoAireOSDevice struct {
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
+	data.Variables
 }
 
 func (cd *CiscoAireOSDevice) ConnectWithSSH() error {
@@ -148,6 +149,7 @@ func NewCiscoAireOSDevice(nd NetDevice) CiscoAireOSDevice {
 	cd.Connector = nd.Connector
 	cd.Credentials = nd.Credentials
 	cd.SSHParams = nd.SSHParams
+	cd.Variables = nd.Variables
 
 	// Prompts
 	cd.UserPromptRE = CiscoAireOSUserPromptRE

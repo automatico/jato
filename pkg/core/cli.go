@@ -32,6 +32,8 @@ func CLI() Params {
 	versionPtr := flag.Bool("v", false, "Jato version")
 	flag.Parse()
 
+	vars := data.Variables{}
+
 	if *versionPtr {
 		fmt.Printf("Jato version: %s\n", version)
 		os.Exit(0)
@@ -40,7 +42,7 @@ func CLI() Params {
 	// Used to collect CLI parameters
 	params := Params{}
 
-	userCreds := data.Credentials{}.Load()
+	userCreds := data.GetCredentials(vars.Credentials)
 
 	// User
 	params.Credentials = userCreds

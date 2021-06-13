@@ -46,6 +46,21 @@ func LoadDevices(fileName string) driver.Devices {
 	return devices
 }
 
+func LoadVariables(fileName string) data.Variables {
+	file, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	variables := data.Variables{}
+
+	err = json.Unmarshal([]byte(file), &variables)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return variables
+}
+
 // Write the output from commands run against
 // devices to a plain text file
 func WriteToFile(results []data.Result) {
