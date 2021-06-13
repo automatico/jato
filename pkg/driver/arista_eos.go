@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
 	"golang.org/x/crypto/ssh"
@@ -21,11 +20,11 @@ var (
 // AristaEOSDevice implements the TelnetDevice
 // and SSHDevice interfaces
 type AristaEOSDevice struct {
-	IP                string `json:"ip"`
-	Name              string `json:"name"`
-	Vendor            string `json:"vendor"`
-	Platform          string `json:"platform"`
-	Connector         string `json:"connector"`
+	IP                string
+	Name              string
+	Vendor            string
+	Platform          string
+	Connector         string
 	UserPromptRE      *regexp.Regexp
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
@@ -158,17 +157,7 @@ func NewAristaEOSDevice(nd NetDevice) AristaEOSDevice {
 	ad.ConfigPromtRE = AristaConfigPromptRE
 
 	// SSH Params
-	if ad.SSHParams.Port == 0 {
-		ad.SSHParams.Port = constant.SSHPort
-	}
-	if !ad.SSHParams.InsecureConnection {
-		ad.SSHParams.InsecureConnection = true
-	}
-	if !ad.SSHParams.InsecureCyphers {
-		ad.SSHParams.InsecureCyphers = false
-	}
-	if !ad.SSHParams.InsecureKeyExchange {
-		ad.SSHParams.InsecureKeyExchange = false
-	}
+	network.InitSSHParams(&ad.SSHParams)
+
 	return ad
 }

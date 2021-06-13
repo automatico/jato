@@ -127,10 +127,10 @@ func main() {
 		for _, dev := range ciscoIOSDevices {
 			dev := dev // lock the host or the same host can run more than once
 			switch dev.Connector {
-			case "telnet":
-				go network.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
 			case "ssh":
 				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			case "telnet":
+				go network.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
 			}
 		}
 

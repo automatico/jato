@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
 	"golang.org/x/crypto/ssh"
@@ -21,11 +20,11 @@ var (
 // CiscoAireOSDevice implements the TelnetDevice
 // and SSHDevice interfaces
 type CiscoAireOSDevice struct {
-	IP                string `json:"ip"`
-	Name              string `json:"name"`
-	Vendor            string `json:"vendor"`
-	Platform          string `json:"platform"`
-	Connector         string `json:"connector"`
+	IP                string
+	Name              string
+	Vendor            string
+	Platform          string
+	Connector         string
 	UserPromptRE      *regexp.Regexp
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
@@ -157,17 +156,7 @@ func NewCiscoAireOSDevice(nd NetDevice) CiscoAireOSDevice {
 	cd.ConfigPromtRE = CiscoAireOSConfigPromptRE
 
 	// SSH Params
-	if cd.SSHParams.Port == 0 {
-		cd.SSHParams.Port = constant.SSHPort
-	}
-	if !cd.SSHParams.InsecureConnection {
-		cd.SSHParams.InsecureConnection = true
-	}
-	if !cd.SSHParams.InsecureCyphers {
-		cd.SSHParams.InsecureCyphers = false
-	}
-	if !cd.SSHParams.InsecureKeyExchange {
-		cd.SSHParams.InsecureKeyExchange = false
-	}
+	network.InitSSHParams(&cd.SSHParams)
+
 	return cd
 }

@@ -8,15 +8,16 @@ import (
 	"time"
 
 	"github.com/automatico/jato/internal/utils"
+	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"golang.org/x/crypto/ssh"
 )
 
 type SSHParams struct {
-	Port                int
-	InsecureConnection  bool
-	InsecureCyphers     bool
-	InsecureKeyExchange bool
+	Port                int  `json:"port"`
+	InsecureConnection  bool `json:"insecureConnection"`
+	InsecureCyphers     bool `json:"insecureCyphers"`
+	InsecureKeyExchange bool `json:"insecureKeyExchange"`
 }
 
 type SSHConn struct {
@@ -62,6 +63,12 @@ func SSHClientConfig(username string, password string, insecureConnection bool, 
 		)
 	}
 	return config
+}
+
+func InitSSHParams(s *SSHParams) {
+	if s.Port == 0 {
+		s.Port = constant.SSHPort
+	}
 }
 
 func SendCommandsWithSSH(conn SSHConn, commands []string, expect *regexp.Regexp, timeout int64) ([]data.CommandOutput, error) {
@@ -139,6 +146,7 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 }
 
 func RunWithSSH(sd SSHDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
+	fmt.Printf("%+v\n", sd)
 	err := sd.ConnectWithSSH()
 	if err != nil {
 		fmt.Println(err)

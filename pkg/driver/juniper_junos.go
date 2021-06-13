@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
 	"golang.org/x/crypto/ssh"
@@ -21,11 +20,11 @@ var (
 // JuniperJunosDevice implements the TelnetDevice
 // and SSHDevice interfaces
 type JuniperJunosDevice struct {
-	IP                string `json:"ip"`
-	Name              string `json:"name"`
-	Vendor            string `json:"vendor"`
-	Platform          string `json:"platform"`
-	Connector         string `json:"connector"`
+	IP                string
+	Name              string
+	Vendor            string
+	Platform          string
+	Connector         string
 	UserPromptRE      *regexp.Regexp
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
@@ -158,17 +157,7 @@ func NewJuniperJunosDevice(nd NetDevice) JuniperJunosDevice {
 	jd.ConfigPromtRE = JuniperConfigPromptRE
 
 	// SSH Params
-	if jd.SSHParams.Port == 0 {
-		jd.SSHParams.Port = constant.SSHPort
-	}
-	if !jd.SSHParams.InsecureConnection {
-		jd.SSHParams.InsecureConnection = true
-	}
-	if !jd.SSHParams.InsecureCyphers {
-		jd.SSHParams.InsecureCyphers = false
-	}
-	if !jd.SSHParams.InsecureKeyExchange {
-		jd.SSHParams.InsecureKeyExchange = false
-	}
+	network.InitSSHParams(&jd.SSHParams)
+
 	return jd
 }

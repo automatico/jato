@@ -19,6 +19,6 @@ type NetDevice struct {
 	data.Variables `json:"variables"`
 	data.Credentials
 
-	network.SSHParams
-	network.TelnetParams
+	network.SSHParams    `json:"sshParams"`
+	network.TelnetParams `json:"telnetParams"`
 }
