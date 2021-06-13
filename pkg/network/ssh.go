@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"io"
+	"log"
 	"regexp"
 	"sync"
 	"time"
@@ -69,6 +70,56 @@ func InitSSHParams(s *SSHParams) {
 	if s.Port == 0 {
 		s.Port = constant.SSHPort
 	}
+}
+
+func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) SSHConn {
+
+	sshConn := SSHConn{}
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,
+		ssh.TTY_OP_ISPEED: 115200,
+		ssh.TTY_OP_OSPEED: 115200,
+	}
+
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), clientConfig)
+	if err != nil {
+		log.Fatalf("Failed to dial: %s", err)
+	}
+
+	session, err := conn.NewSession()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	stdOut, err := session.StdoutPipe()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	stdIn, err := session.StdinPipe()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = session.RequestPty("xterm", 0, 200, modes)
+	if err != nil {
+		session.Close()
+		fmt.Println(err)
+	}
+
+	err = session.Shell()
+	if err != nil {
+		session.Close()
+		fmt.Println(err)
+	}
+
+	sshConn.Session = session
+	sshConn.StdIn = stdIn
+	sshConn.StdOut = stdOut
+
+	return sshConn
+
 }
 
 func SendCommandsWithSSH(conn SSHConn, commands []string, expect *regexp.Regexp, timeout int64) ([]data.CommandOutput, error) {
@@ -145,8 +196,9 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 	return <-ch
 }
 
+// RunWithSSH is the entrypoint to run commands
+// against a device.
 func RunWithSSH(sd SSHDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
-	fmt.Printf("%+v\n", sd)
 	err := sd.ConnectWithSSH()
 	if err != nil {
 		fmt.Println(err)

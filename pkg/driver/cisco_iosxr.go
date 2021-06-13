@@ -1,14 +1,11 @@
 package driver
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 	"time"
 
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
-	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -36,8 +33,6 @@ type CiscoIOSXRDevice struct {
 
 func (cd *CiscoIOSXRDevice) ConnectWithSSH() error {
 
-	sshConn := network.SSHConn{}
-
 	clientConfig := network.SSHClientConfig(
 		cd.Credentials.Username,
 		cd.Credentials.Password,
@@ -46,49 +41,9 @@ func (cd *CiscoIOSXRDevice) ConnectWithSSH() error {
 		cd.SSHParams.InsecureKeyExchange,
 	)
 
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 115200,
-		ssh.TTY_OP_OSPEED: 115200,
-	}
+	sshConn := network.ConnectWithSSH(cd.IP, cd.SSHParams.Port, clientConfig)
 
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cd.IP, cd.SSHParams.Port), clientConfig)
-	if err != nil {
-		log.Fatalf("Failed to dial: %s", err)
-	}
-
-	session, err := conn.NewSession()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	stdOut, err := session.StdoutPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	stdIn, err := session.StdinPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	err = session.RequestPty("xterm", 0, 200, modes)
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	err = session.Shell()
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	network.ReadSSH(stdOut, cd.SuperUserPromptRE, 2)
-
-	sshConn.Session = session
-	sshConn.StdIn = stdIn
-	sshConn.StdOut = stdOut
+	network.ReadSSH(sshConn.StdOut, cd.SuperUserPromptRE, 2)
 
 	cd.SSHConn = sshConn
 
