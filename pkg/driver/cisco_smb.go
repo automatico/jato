@@ -113,6 +113,7 @@ func (cd CiscoSMBDevice) SendCommandWithSSH(command string) data.Result {
 	cmdOut, err := network.SendCommandWithSSH(cd.SSHConn, command, cd.SuperUserPromptRE, 120)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -132,6 +133,7 @@ func (cd CiscoSMBDevice) SendCommandsWithSSH(commands []string) data.Result {
 	cmdOut, err := network.SendCommandsWithSSH(cd.SSHConn, commands, cd.SuperUserPromptRE, 120)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 

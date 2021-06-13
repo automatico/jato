@@ -76,6 +76,7 @@ func (cd CiscoIOSDevice) SendCommandWithTelnet(cmd string) data.Result {
 	cmdOut, err := network.SendCommandWithTelnet(cd.TelnetConn, cmd, cd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -94,6 +95,7 @@ func (cd CiscoIOSDevice) SendCommandsWithTelnet(commands []string) data.Result {
 	cmdOut, err := network.SendCommandsWithTelnet(cd.TelnetConn, commands, cd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -180,6 +182,7 @@ func (cd CiscoIOSDevice) SendCommandWithSSH(command string) data.Result {
 	cmdOut, err := network.SendCommandWithSSH(cd.SSHConn, command, cd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -198,6 +201,7 @@ func (cd CiscoIOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 	cmdOut, err := network.SendCommandsWithSSH(cd.SSHConn, commands, cd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 

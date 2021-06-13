@@ -112,6 +112,7 @@ func (ad AristaEOSDevice) SendCommandWithSSH(command string) data.Result {
 	cmdOut, err := network.SendCommandWithSSH(ad.SSHConn, command, ad.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -130,6 +131,7 @@ func (ad AristaEOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 	cmdOut, err := network.SendCommandsWithSSH(ad.SSHConn, commands, ad.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 

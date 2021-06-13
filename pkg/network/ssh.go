@@ -51,11 +51,11 @@ func SSHClientConfig(username string, password string, insecureConnection bool, 
 			"aes192-cbc",
 			"aes256-cbc",
 			"3des-cbc",
-			"des-cbc")
+			"des-cbc",
+		)
 	}
 	if InsecureKeyExchange {
-		config.KeyExchanges = append(
-			config.KeyExchanges,
+		config.KeyExchanges = append(config.KeyExchanges,
 			"diffie-hellman-group-exchange-sha256",
 			"diffie-hellman-group-exchange-sha1",
 			"diffie-hellman-group1-sha1",

@@ -111,6 +111,7 @@ func (cd CiscoAireOSDevice) SendCommandWithSSH(command string) data.Result {
 	cmdOut, err := network.SendCommandWithSSH(cd.SSHConn, command, cd.SuperUserPromptRE, 5)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -129,6 +130,7 @@ func (cd CiscoAireOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 	cmdOut, err := network.SendCommandsWithSSH(cd.SSHConn, commands, cd.SuperUserPromptRE, 5)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 

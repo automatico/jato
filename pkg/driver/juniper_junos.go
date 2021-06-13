@@ -112,6 +112,7 @@ func (jd JuniperJunosDevice) SendCommandWithSSH(command string) data.Result {
 	cmdOut, err := network.SendCommandWithSSH(jd.SSHConn, command, jd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -130,6 +131,7 @@ func (jd JuniperJunosDevice) SendCommandsWithSSH(commands []string) data.Result 
 	cmdOut, err := network.SendCommandsWithSSH(jd.SSHConn, commands, jd.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
