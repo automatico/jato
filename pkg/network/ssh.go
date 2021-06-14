@@ -34,36 +34,22 @@ type SSHDevice interface {
 }
 
 func SSHClientConfig(username string, password string, insecureConnection bool, insecureCyphers bool, InsecureKeyExchange bool) *ssh.ClientConfig {
-	config := &ssh.ClientConfig{
+	c := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(password),
 		},
 	}
 	if insecureConnection {
-		config.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+		c.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 	}
 	if insecureCyphers {
-		config.Config.Ciphers = append(config.Config.Ciphers,
-			"aes128-ctr",
-			"aes192-ctr",
-			"aes256-ctr",
-			"aes128-cbc",
-			"aes192-cbc",
-			"aes256-cbc",
-			"3des-cbc",
-			"des-cbc",
-		)
+		c.Config.Ciphers = append(c.Config.Ciphers, constant.InsecureSSHCyphers...)
 	}
 	if InsecureKeyExchange {
-		config.KeyExchanges = append(config.KeyExchanges,
-			"diffie-hellman-group-exchange-sha256",
-			"diffie-hellman-group-exchange-sha1",
-			"diffie-hellman-group1-sha1",
-			"diffie-hellman-group14-sha1",
-		)
+		c.KeyExchanges = append(c.KeyExchanges, constant.InsecureSSHKeyAlgorithms...)
 	}
-	return config
+	return c
 }
 
 func InitSSHParams(s *SSHParams) {
