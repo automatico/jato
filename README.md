@@ -114,6 +114,7 @@ raw output and another with a json array of the command to value
 hash.
 
 ### Example JSON ouput
+`output/iosxr-1/1623629887.json`
 ```json
 {
  "device": "iosxr-1",
@@ -146,6 +147,7 @@ hash.
 ```
 
 ### Example RAW ouput
+`output/iosxr-1/1623629887.raw`
 ```
 ! Device:    iosxr-1
 ! Timestamp: 1623629887
