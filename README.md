@@ -108,9 +108,8 @@ Run a series of commands against N number of devices.
 ```
 ./jato -d test/devices/cisco_iosxr.json -c test/commands/cisco_iosxr.json
 ```
-The results will be saved to a `output/` directory. The result of the 
-commands run will be saved to a time stamped files. Once with the 
-raw output and another with a json array of the command to value 
+The results will be saved to an `output/` directory in time stamped files. 
+One file with the raw output and another with a json array of the command / output 
 hash.
 
 ### Example JSON ouput
