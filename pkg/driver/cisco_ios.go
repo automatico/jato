@@ -2,15 +2,14 @@ package driver
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"time"
 
+	"github.com/automatico/jato/internal/logger"
 	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
 	"github.com/reiver/go-telnet"
-	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -22,11 +21,11 @@ var (
 // CiscoIOSDevice implements the TelnetDevice
 // and SSHDevice interfaces
 type CiscoIOSDevice struct {
-	IP                string `json:"ip"`
-	Name              string `json:"name"`
-	Vendor            string `json:"vendor"`
-	Platform          string `json:"platform"`
-	Connector         string `json:"connector"`
+	IP                string
+	Name              string
+	Vendor            string
+	Platform          string
+	Connector         string
 	UserPromptRE      *regexp.Regexp
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
@@ -35,46 +34,48 @@ type CiscoIOSDevice struct {
 	network.TelnetParams
 	network.SSHConn
 	TelnetConn *telnet.Conn
+	data.Variables
 }
 
-func (cd *CiscoIOSDevice) ConnectWithTelnet() error {
+func (d *CiscoIOSDevice) ConnectWithTelnet() error {
 
-	conn, err := telnet.DialTo(fmt.Sprintf("%s:%d", cd.IP, cd.TelnetParams.Port))
+	conn, err := telnet.DialTo(fmt.Sprintf("%s:%d", d.IP, d.TelnetParams.Port))
 	if err != nil {
 		return err
 	}
 
-	_, err = network.SendCommandWithTelnet(conn, cd.Username, constant.PasswordRE, 1)
+	_, err = network.SendCommandWithTelnet(conn, d.Username, constant.PasswordRE, 1)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
-	_, err = network.SendCommandWithTelnet(conn, cd.Password, cd.SuperUserPromptRE, 1)
+	_, err = network.SendCommandWithTelnet(conn, d.Password, d.SuperUserPromptRE, 1)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
 
-	cd.TelnetConn = conn
+	d.TelnetConn = conn
 
-	cd.SendCommandWithTelnet("terminal length 0")
-	cd.SendCommandWithTelnet("terminal width 0")
+	d.SendCommandWithTelnet("terminal length 0")
+	d.SendCommandWithTelnet("terminal width 0")
 
 	return nil
 }
 
-func (cd CiscoIOSDevice) DisconnectTelnet() error {
-	return cd.TelnetConn.Close()
+func (d CiscoIOSDevice) DisconnectTelnet() error {
+	return d.TelnetConn.Close()
 }
 
-func (cd CiscoIOSDevice) SendCommandWithTelnet(cmd string) data.Result {
+func (d CiscoIOSDevice) SendCommandWithTelnet(cmd string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandWithTelnet(cd.TelnetConn, cmd, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandWithTelnet(d.TelnetConn, cmd, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -83,16 +84,17 @@ func (cd CiscoIOSDevice) SendCommandWithTelnet(cmd string) data.Result {
 	return result
 }
 
-func (cd CiscoIOSDevice) SendCommandsWithTelnet(commands []string) data.Result {
+func (d CiscoIOSDevice) SendCommandsWithTelnet(commands []string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandsWithTelnet(cd.TelnetConn, commands, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandsWithTelnet(d.TelnetConn, commands, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -101,84 +103,43 @@ func (cd CiscoIOSDevice) SendCommandsWithTelnet(commands []string) data.Result {
 	return result
 }
 
-func (cd *CiscoIOSDevice) ConnectWithSSH() error {
-
-	sshConn := network.SSHConn{}
+func (d *CiscoIOSDevice) ConnectWithSSH() error {
 
 	clientConfig := network.SSHClientConfig(
-		cd.Credentials.Username,
-		cd.Credentials.Password,
-		cd.SSHParams.InsecureConnection,
-		cd.SSHParams.InsecureCyphers,
-		cd.SSHParams.InsecureKeyExchange,
+		d.Credentials.Username,
+		d.Credentials.Password,
+		d.SSHParams.InsecureConnection,
+		d.SSHParams.InsecureCyphers,
+		d.SSHParams.InsecureKeyExchange,
 	)
 
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 115200,
-		ssh.TTY_OP_OSPEED: 115200,
-	}
+	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cd.IP, cd.SSHParams.Port), clientConfig)
-	if err != nil {
-		log.Fatalf("Failed to dial: %s", err)
-	}
+	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
 
-	session, err := conn.NewSession()
-	if err != nil {
-		fmt.Println(err)
-	}
+	d.SSHConn = sshConn
 
-	stdOut, err := session.StdoutPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	stdIn, err := session.StdinPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	err = session.RequestPty("xterm", 0, 200, modes)
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	err = session.Shell()
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	network.ReadSSH(stdOut, cd.SuperUserPromptRE, 2)
-
-	sshConn.Session = session
-	sshConn.StdIn = stdIn
-	sshConn.StdOut = stdOut
-
-	cd.SSHConn = sshConn
-
-	cd.SendCommandWithSSH("terminal length 0")
-	cd.SendCommandWithSSH("terminal width 0")
+	d.SendCommandWithSSH("terminal length 0")
+	d.SendCommandWithSSH("terminal width 0")
 
 	return nil
 }
 
-func (cd CiscoIOSDevice) DisconnectSSH() error {
-	return cd.SSHConn.Session.Close()
+func (d CiscoIOSDevice) DisconnectSSH() error {
+	return d.SSHConn.Session.Close()
 }
 
-func (cd CiscoIOSDevice) SendCommandWithSSH(command string) data.Result {
+func (d CiscoIOSDevice) SendCommandWithSSH(command string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandWithSSH(cd.SSHConn, command, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandWithSSH(d.SSHConn, command, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -187,16 +148,17 @@ func (cd CiscoIOSDevice) SendCommandWithSSH(command string) data.Result {
 	return result
 }
 
-func (cd CiscoIOSDevice) SendCommandsWithSSH(commands []string) data.Result {
+func (d CiscoIOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandsWithSSH(cd.SSHConn, commands, cd.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandsWithSSH(d.SSHConn, commands, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -208,37 +170,27 @@ func (cd CiscoIOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 // NewCiscoIOSDevice takes a NetDevice and initializes
 // a CiscoIOSDevice.
 func NewCiscoIOSDevice(nd NetDevice) CiscoIOSDevice {
-	cd := CiscoIOSDevice{}
-	cd.IP = nd.IP
-	cd.Name = nd.Name
-	cd.Vendor = nd.Vendor
-	cd.Platform = nd.Platform
-	cd.Connector = nd.Connector
-	cd.Credentials = nd.Credentials
-	cd.SSHParams = nd.SSHParams
-	cd.TelnetParams = nd.TelnetParams
+	d := CiscoIOSDevice{}
+	d.IP = nd.IP
+	d.Name = nd.Name
+	d.Vendor = nd.Vendor
+	d.Platform = nd.Platform
+	d.Connector = nd.Connector
+	d.Credentials = nd.Credentials
+	d.SSHParams = nd.SSHParams
+	d.TelnetParams = nd.TelnetParams
+	d.Variables = nd.Variables
 
 	// Prompts
-	cd.UserPromptRE = CiscoUserPromptRE
-	cd.SuperUserPromptRE = CiscoSuperUserPromptRE
-	cd.ConfigPromtRE = CiscoConfigPromptRE
+	d.UserPromptRE = CiscoUserPromptRE
+	d.SuperUserPromptRE = CiscoSuperUserPromptRE
+	d.ConfigPromtRE = CiscoConfigPromptRE
 
 	// SSH Params
-	if cd.SSHParams.Port == 0 {
-		cd.SSHParams.Port = constant.SSHPort
-	}
-	if !cd.SSHParams.InsecureConnection {
-		cd.SSHParams.InsecureConnection = true
-	}
-	if !cd.SSHParams.InsecureCyphers {
-		cd.SSHParams.InsecureCyphers = false
-	}
-	if !cd.SSHParams.InsecureKeyExchange {
-		cd.SSHParams.InsecureKeyExchange = false
-	}
+	network.InitSSHParams(&d.SSHParams)
+
 	// Telnet Params
-	if cd.TelnetParams.Port == 0 {
-		cd.TelnetParams.Port = constant.TelnetPort
-	}
-	return cd
+	network.InitTelnetParams(&d.TelnetParams)
+
+	return d
 }

@@ -46,10 +46,16 @@ func main() {
 	}
 
 	for _, d := range cliParams.Devices.Devices {
-		d.Credentials.Username = cliParams.Credentials.Username
-		d.Credentials.Password = cliParams.Credentials.Password
-		d.Credentials.SuperPassword = cliParams.Credentials.SuperPassword
-		d.Credentials.SSHKeyFile = cliParams.Credentials.SSHKeyFile
+
+		creds := d.Variables.Credentials
+		if creds != "" {
+			d.Credentials = data.GetCredentials(creds)
+		} else {
+			d.Credentials.Username = cliParams.Credentials.Username
+			d.Credentials.Password = cliParams.Credentials.Password
+			d.Credentials.SuperPassword = cliParams.Credentials.SuperPassword
+			d.Credentials.SSHKeyFile = cliParams.Credentials.SSHKeyFile
+		}
 
 		vendorPlatform := fmt.Sprintf("%s_%s", d.Vendor, d.Platform)
 		switch vendorPlatform {
@@ -121,10 +127,10 @@ func main() {
 		for _, dev := range ciscoIOSDevices {
 			dev := dev // lock the host or the same host can run more than once
 			switch dev.Connector {
-			case "telnet":
-				go network.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
 			case "ssh":
 				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			case "telnet":
+				go network.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
 			}
 		}
 

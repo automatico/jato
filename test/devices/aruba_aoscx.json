@@ -1,5 +1,9 @@
 {
   "devices": [
-    {"name": "aoscx-1", "ip": "192.168.255.161", "vendor": "aruba", "platform": "aoscx", "connector": "ssh"}
+    {"name": "aoscx-1", "ip": "192.168.255.161", "vendor": "aruba", "platform": "aoscx", "connector": "ssh",
+      "sshParams": {
+        "insecureConnection": true
+      }
+    }
   ]
 }

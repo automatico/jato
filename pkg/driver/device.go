@@ -11,12 +11,14 @@ type Devices struct {
 }
 
 type NetDevice struct {
-	IP        string `json:"ip"`
-	Name      string `json:"name"`
-	Vendor    string `json:"vendor"`
-	Platform  string `json:"platform"`
-	Connector string `json:"connector"`
+	IP             string `json:"ip"`
+	Name           string `json:"name"`
+	Vendor         string `json:"vendor"`
+	Platform       string `json:"platform"`
+	Connector      string `json:"connector"`
+	data.Variables `json:"variables"`
 	data.Credentials
-	network.SSHParams
-	network.TelnetParams
+
+	network.SSHParams    `json:"sshParams"`
+	network.TelnetParams `json:"telnetParams"`
 }

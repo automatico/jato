@@ -1,15 +1,11 @@
 package driver
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 	"time"
 
-	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
-	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -21,97 +17,57 @@ var (
 // AristaEOSDevice implements the TelnetDevice
 // and SSHDevice interfaces
 type AristaEOSDevice struct {
-	IP                string `json:"ip"`
-	Name              string `json:"name"`
-	Vendor            string `json:"vendor"`
-	Platform          string `json:"platform"`
-	Connector         string `json:"connector"`
+	IP                string
+	Name              string
+	Vendor            string
+	Platform          string
+	Connector         string
 	UserPromptRE      *regexp.Regexp
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
+	data.Variables
 }
 
-func (ad *AristaEOSDevice) ConnectWithSSH() error {
-
-	sshConn := network.SSHConn{}
+func (d *AristaEOSDevice) ConnectWithSSH() error {
 
 	clientConfig := network.SSHClientConfig(
-		ad.Credentials.Username,
-		ad.Credentials.Password,
-		ad.SSHParams.InsecureConnection,
-		ad.SSHParams.InsecureCyphers,
-		ad.SSHParams.InsecureKeyExchange,
+		d.Credentials.Username,
+		d.Credentials.Password,
+		d.SSHParams.InsecureConnection,
+		d.SSHParams.InsecureCyphers,
+		d.SSHParams.InsecureKeyExchange,
 	)
 
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 115200,
-		ssh.TTY_OP_OSPEED: 115200,
-	}
+	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", ad.IP, ad.SSHParams.Port), clientConfig)
-	if err != nil {
-		log.Fatalf("Failed to dial: %s", err)
-	}
+	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
 
-	session, err := conn.NewSession()
-	if err != nil {
-		fmt.Println(err)
-	}
+	d.SSHConn = sshConn
 
-	stdOut, err := session.StdoutPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	stdIn, err := session.StdinPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	err = session.RequestPty("xterm", 0, 200, modes)
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	err = session.Shell()
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	network.ReadSSH(stdOut, ad.SuperUserPromptRE, 2)
-
-	sshConn.Session = session
-	sshConn.StdIn = stdIn
-	sshConn.StdOut = stdOut
-
-	ad.SSHConn = sshConn
-
-	ad.SendCommandWithSSH("terminal length 0")
-	ad.SendCommandWithSSH("terminal width 32767")
+	d.SendCommandWithSSH("terminal length 0")
+	d.SendCommandWithSSH("terminal width 32767")
 
 	return nil
 }
 
-func (ad AristaEOSDevice) DisconnectSSH() error {
-	return ad.SSHConn.Session.Close()
+func (d AristaEOSDevice) DisconnectSSH() error {
+	return d.SSHConn.Session.Close()
 }
 
-func (ad AristaEOSDevice) SendCommandWithSSH(command string) data.Result {
+func (d AristaEOSDevice) SendCommandWithSSH(command string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = ad.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandWithSSH(ad.SSHConn, command, ad.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandWithSSH(d.SSHConn, command, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -120,16 +76,17 @@ func (ad AristaEOSDevice) SendCommandWithSSH(command string) data.Result {
 	return result
 }
 
-func (ad AristaEOSDevice) SendCommandsWithSSH(commands []string) data.Result {
+func (d AristaEOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = ad.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := network.SendCommandsWithSSH(ad.SSHConn, commands, ad.SuperUserPromptRE, 2)
+	cmdOut, err := network.SendCommandsWithSSH(d.SSHConn, commands, d.SuperUserPromptRE, 2)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -141,32 +98,23 @@ func (ad AristaEOSDevice) SendCommandsWithSSH(commands []string) data.Result {
 // NewAristaEOSDevice takes a NetDevice and initializes
 // a AristaEOSDevice.
 func NewAristaEOSDevice(nd NetDevice) AristaEOSDevice {
-	ad := AristaEOSDevice{}
-	ad.IP = nd.IP
-	ad.Name = nd.Name
-	ad.Vendor = nd.Vendor
-	ad.Platform = nd.Platform
-	ad.Connector = nd.Connector
-	ad.Credentials = nd.Credentials
-	ad.SSHParams = nd.SSHParams
+	d := AristaEOSDevice{}
+	d.IP = nd.IP
+	d.Name = nd.Name
+	d.Vendor = nd.Vendor
+	d.Platform = nd.Platform
+	d.Connector = nd.Connector
+	d.Credentials = nd.Credentials
+	d.SSHParams = nd.SSHParams
+	d.Variables = nd.Variables
 
 	// Prompts
-	ad.UserPromptRE = AristaUserPromptRE
-	ad.SuperUserPromptRE = AristaSuperUserPromptRE
-	ad.ConfigPromtRE = AristaConfigPromptRE
+	d.UserPromptRE = AristaUserPromptRE
+	d.SuperUserPromptRE = AristaSuperUserPromptRE
+	d.ConfigPromtRE = AristaConfigPromptRE
 
 	// SSH Params
-	if ad.SSHParams.Port == 0 {
-		ad.SSHParams.Port = constant.SSHPort
-	}
-	if !ad.SSHParams.InsecureConnection {
-		ad.SSHParams.InsecureConnection = true
-	}
-	if !ad.SSHParams.InsecureCyphers {
-		ad.SSHParams.InsecureCyphers = false
-	}
-	if !ad.SSHParams.InsecureKeyExchange {
-		ad.SSHParams.InsecureKeyExchange = false
-	}
-	return ad
+	network.InitSSHParams(&d.SSHParams)
+
+	return d
 }

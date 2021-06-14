@@ -1,15 +1,11 @@
 package driver
 
 import (
-	"fmt"
-	"log"
 	"regexp"
 	"time"
 
-	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
-	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -21,98 +17,58 @@ var (
 // CiscoSMBDevice implements the TelnetDevice
 // and SSHDevice interfaces
 type CiscoSMBDevice struct {
-	IP                string `json:"ip"`
-	Name              string `json:"name"`
-	Vendor            string `json:"vendor"`
-	Platform          string `json:"platform"`
-	Connector         string `json:"connector"`
+	IP                string
+	Name              string
+	Vendor            string
+	Platform          string
+	Connector         string
 	UserPromptRE      *regexp.Regexp
 	SuperUserPromptRE *regexp.Regexp
 	ConfigPromtRE     *regexp.Regexp
 	data.Credentials
 	network.SSHParams
 	network.SSHConn
+	data.Variables
 }
 
-func (cd *CiscoSMBDevice) ConnectWithSSH() error {
-
-	sshConn := network.SSHConn{}
+func (d *CiscoSMBDevice) ConnectWithSSH() error {
 
 	clientConfig := network.SSHClientConfig(
-		cd.Credentials.Username,
-		cd.Credentials.Password,
-		cd.SSHParams.InsecureConnection,
-		cd.SSHParams.InsecureCyphers,
-		cd.SSHParams.InsecureKeyExchange,
+		d.Credentials.Username,
+		d.Credentials.Password,
+		d.SSHParams.InsecureConnection,
+		d.SSHParams.InsecureCyphers,
+		d.SSHParams.InsecureKeyExchange,
 	)
 
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 115200,
-		ssh.TTY_OP_OSPEED: 115200,
-	}
+	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cd.IP, cd.SSHParams.Port), clientConfig)
-	if err != nil {
-		log.Fatalf("Failed to dial: %s", err)
-	}
+	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 5)
 
-	session, err := conn.NewSession()
-	if err != nil {
-		fmt.Println(err)
-	}
+	d.SSHConn = sshConn
 
-	stdOut, err := session.StdoutPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	stdIn, err := session.StdinPipe()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	err = session.RequestPty("xterm", 0, 200, modes)
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	err = session.Shell()
-	if err != nil {
-		session.Close()
-		fmt.Println(err)
-	}
-
-	network.ReadSSH(stdOut, cd.SuperUserPromptRE, 5)
-
-	sshConn.Session = session
-	sshConn.StdIn = stdIn
-	sshConn.StdOut = stdOut
-
-	cd.SSHConn = sshConn
-
-	cd.SendCommandWithSSH("terminal datadump")
-	cd.SendCommandWithSSH("terminal width 512")
+	d.SendCommandWithSSH("terminal datadump")
+	d.SendCommandWithSSH("terminal width 512")
 
 	return nil
 }
 
-func (cd CiscoSMBDevice) DisconnectSSH() error {
-	return cd.SSHConn.Session.Close()
+func (d CiscoSMBDevice) DisconnectSSH() error {
+	return d.SSHConn.Session.Close()
 }
 
-func (cd CiscoSMBDevice) SendCommandWithSSH(command string) data.Result {
+func (d CiscoSMBDevice) SendCommandWithSSH(command string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
 	// Cisco SMB devices are really slow to output to the terminal.
-	cmdOut, err := network.SendCommandWithSSH(cd.SSHConn, command, cd.SuperUserPromptRE, 120)
+	cmdOut, err := network.SendCommandWithSSH(d.SSHConn, command, d.SuperUserPromptRE, 120)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -121,17 +77,18 @@ func (cd CiscoSMBDevice) SendCommandWithSSH(command string) data.Result {
 	return result
 }
 
-func (cd CiscoSMBDevice) SendCommandsWithSSH(commands []string) data.Result {
+func (d CiscoSMBDevice) SendCommandsWithSSH(commands []string) data.Result {
 
 	result := data.Result{}
 
-	result.Device = cd.Name
+	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
 	// Cisco SMB devices are really slow to output to the terminal.
-	cmdOut, err := network.SendCommandsWithSSH(cd.SSHConn, commands, cd.SuperUserPromptRE, 120)
+	cmdOut, err := network.SendCommandsWithSSH(d.SSHConn, commands, d.SuperUserPromptRE, 120)
 	if err != nil {
 		result.OK = false
+		result.Error = err
 		return result
 	}
 
@@ -143,33 +100,23 @@ func (cd CiscoSMBDevice) SendCommandsWithSSH(commands []string) data.Result {
 // NewCiscoSMBDevice takes a NetDevice and initializes
 // a CiscoSMBDevice.
 func NewCiscoSMBDevice(nd NetDevice) CiscoSMBDevice {
-	cd := CiscoSMBDevice{}
-	cd.IP = nd.IP
-	cd.Name = nd.Name
-	cd.Vendor = nd.Vendor
-	cd.Platform = nd.Platform
-	cd.Connector = nd.Connector
-	cd.Credentials = nd.Credentials
-	cd.SSHParams = nd.SSHParams
+	d := CiscoSMBDevice{}
+	d.IP = nd.IP
+	d.Name = nd.Name
+	d.Vendor = nd.Vendor
+	d.Platform = nd.Platform
+	d.Connector = nd.Connector
+	d.Credentials = nd.Credentials
+	d.SSHParams = nd.SSHParams
+	d.Variables = nd.Variables
 
 	// Prompts
-	cd.UserPromptRE = CiscoSMBUserPromptRE
-	cd.SuperUserPromptRE = CiscoSMBSuperUserPromptRE
-	cd.ConfigPromtRE = CiscoSMBConfigPromptRE
+	d.UserPromptRE = CiscoSMBUserPromptRE
+	d.SuperUserPromptRE = CiscoSMBSuperUserPromptRE
+	d.ConfigPromtRE = CiscoSMBConfigPromptRE
 
 	// SSH Params
-	if cd.SSHParams.Port == 0 {
-		cd.SSHParams.Port = constant.SSHPort
-	}
-	if !cd.SSHParams.InsecureConnection {
-		cd.SSHParams.InsecureConnection = true
-	}
-	if !cd.SSHParams.InsecureCyphers {
-		cd.SSHParams.InsecureCyphers = true
-	}
-	if !cd.SSHParams.InsecureKeyExchange {
-		cd.SSHParams.InsecureKeyExchange = true
-	}
+	network.InitSSHParams(&d.SSHParams)
 
-	return cd
+	return d
 }

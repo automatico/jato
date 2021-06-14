@@ -7,16 +7,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/automatico/jato/internal/logger"
 	"github.com/automatico/jato/internal/utils"
+	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"golang.org/x/crypto/ssh"
 )
 
 type SSHParams struct {
-	Port                int
-	InsecureConnection  bool
-	InsecureCyphers     bool
-	InsecureKeyExchange bool
+	Port                int  `json:"port"`
+	InsecureConnection  bool `json:"insecureConnection"`
+	InsecureCyphers     bool `json:"insecureCyphers"`
+	InsecureKeyExchange bool `json:"insecureKeyExchange"`
 }
 
 type SSHConn struct {
@@ -32,26 +34,78 @@ type SSHDevice interface {
 }
 
 func SSHClientConfig(username string, password string, insecureConnection bool, insecureCyphers bool, InsecureKeyExchange bool) *ssh.ClientConfig {
-	config := &ssh.ClientConfig{
+	c := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(password),
 		},
 	}
 	if insecureConnection {
-		config.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+		c.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 	}
 	if insecureCyphers {
-		config.Config.Ciphers = append(config.Config.Ciphers, "aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-cbc", "aes192-cbc", "aes256-cbc", "3des-cbc", "des-cbc")
+		c.Config.Ciphers = append(c.Config.Ciphers, constant.InsecureSSHCyphers...)
 	}
 	if InsecureKeyExchange {
-		config.KeyExchanges = append(
-			config.KeyExchanges,
-			"diffie-hellman-group-exchange-sha256",
-			"diffie-hellman-group-exchange-sha1",
-		)
+		c.KeyExchanges = append(c.KeyExchanges, constant.InsecureSSHKeyAlgorithms...)
 	}
-	return config
+	return c
+}
+
+func InitSSHParams(s *SSHParams) {
+	if s.Port == 0 {
+		s.Port = constant.SSHPort
+	}
+}
+
+func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) SSHConn {
+
+	sshConn := SSHConn{}
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,
+		ssh.TTY_OP_ISPEED: 115200,
+		ssh.TTY_OP_OSPEED: 115200,
+	}
+
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), clientConfig)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to dial: %s", err))
+	}
+
+	session, err := conn.NewSession()
+	if err != nil {
+		logger.Error(fmt.Sprintf("%s", err))
+	}
+
+	stdOut, err := session.StdoutPipe()
+	if err != nil {
+		logger.Error(fmt.Sprintf("%s", err))
+	}
+
+	stdIn, err := session.StdinPipe()
+	if err != nil {
+		logger.Error(fmt.Sprintf("%s", err))
+	}
+
+	err = session.RequestPty("xterm", 0, 200, modes)
+	if err != nil {
+		session.Close()
+		logger.Error(fmt.Sprintf("%s", err))
+	}
+
+	err = session.Shell()
+	if err != nil {
+		session.Close()
+		logger.Error(fmt.Sprintf("%s", err))
+	}
+
+	sshConn.Session = session
+	sshConn.StdIn = stdIn
+	sshConn.StdOut = stdOut
+
+	return sshConn
+
 }
 
 func SendCommandsWithSSH(conn SSHConn, commands []string, expect *regexp.Regexp, timeout int64) ([]data.CommandOutput, error) {
@@ -128,6 +182,8 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 	return <-ch
 }
 
+// RunWithSSH is the entrypoint to run commands
+// against a device.
 func RunWithSSH(sd SSHDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
 	err := sd.ConnectWithSSH()
 	if err != nil {

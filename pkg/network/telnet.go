@@ -9,18 +9,25 @@ import (
 	"time"
 
 	"github.com/automatico/jato/internal/utils"
+	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/reiver/go-telnet"
 )
 
 type TelnetParams struct {
-	Port int
+	Port int `json:"port"`
 }
 
 type TelnetDevice interface {
 	ConnectWithTelnet() error
 	SendCommandsWithTelnet([]string) data.Result
 	DisconnectTelnet() error
+}
+
+func InitTelnetParams(s *TelnetParams) {
+	if s.Port == 0 {
+		s.Port = constant.TelnetPort
+	}
 }
 
 func SendCommandsWithTelnet(conn *telnet.Conn, commands []string, expect *regexp.Regexp, timeout int64) ([]data.CommandOutput, error) {

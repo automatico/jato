@@ -1,5 +1,18 @@
 {
   "devices": [
-    {"name": "iosxr-1", "ip": "192.168.255.162", "vendor": "cisco", "platform": "iosxr", "connector": "ssh"}
+    {
+      "name": "iosxr-1", "ip": "192.168.255.162", "vendor": "cisco", "platform": "iosxr", "connector": "ssh",
+      "sshParams": {
+        "insecureConnection": true,
+        "insecureCyphers": true,
+        "insecureKeyExchange": true
+      },
+      "variables": {
+        "credentials": "JATO_IOSXR",
+        "groups": [
+          "stuff", "things"
+        ]
+      }
+    }
   ]
 }

@@ -1,5 +1,16 @@
 {
   "devices": [
-    {"name": "aireos-1", "ip": "192.168.255.164", "vendor": "cisco", "platform": "aireos", "connector": "ssh"}
+    {
+      "name": "aireos-1", "ip": "192.168.255.164", "vendor": "cisco", "platform": "aireos", "connector": "ssh",
+      "sshParams": {
+        "insecureConnection": true
+      },
+      "variables": {
+        "credentials": "JATO_AIREOS",
+        "groups": [
+          "stuff", "things"
+        ]
+      }
+    }
   ]
 }
