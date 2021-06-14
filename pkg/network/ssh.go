@@ -166,7 +166,7 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 				tmp += string(buf[:n])
 				// Uncommenting this might help you debug if you are coming into
 				// errors with timeouts when correct details entered
-				// fmt.Println(tmp)
+				// logger.Debug(tmp)
 			}
 			br <- tmp
 		}(stdOut, expect, buffRead)
@@ -175,7 +175,7 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 		case ret := <-buffRead:
 			ch <- ret
 		case <-time.After(time.Duration(timeout) * time.Second):
-			fmt.Printf("Waiting for '%s' took longer than timeout: %d\n", expect, timeout)
+			logger.Error(fmt.Sprintf("Waiting for '%s' took longer than timeout: %d", expect, timeout))
 		}
 	}(stdOut, expect)
 
@@ -187,7 +187,7 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 func RunWithSSH(sd SSHDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
 	err := sd.ConnectWithSSH()
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
 	defer sd.DisconnectSSH()
 	defer wg.Done()
