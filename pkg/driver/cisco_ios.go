@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/automatico/jato/internal/logger"
 	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/network"
@@ -45,11 +46,11 @@ func (d *CiscoIOSDevice) ConnectWithTelnet() error {
 
 	_, err = network.SendCommandWithTelnet(conn, d.Username, constant.PasswordRE, 1)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
 	_, err = network.SendCommandWithTelnet(conn, d.Password, d.SuperUserPromptRE, 1)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
 
 	d.TelnetConn = conn

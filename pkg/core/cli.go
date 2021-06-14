@@ -6,6 +6,7 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/automatico/jato/internal/logger"
 	"github.com/automatico/jato/internal/utils"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/driver"
@@ -50,7 +51,7 @@ func CLI() Params {
 	if *userPtr != "" {
 		params.Credentials.Username = *userPtr
 	} else if params.Credentials.Username == "" {
-		fmt.Println("A username is required.")
+		logger.Error("A username is required.")
 		os.Exit(1)
 	}
 
@@ -61,12 +62,12 @@ func CLI() Params {
 		*userPass, err = promptSecret("Enter user password:")
 		params.Credentials.Password = *userPass
 		if err != nil {
-			fmt.Println(err)
+			logger.Error(fmt.Sprintf("%s", err))
 			os.Exit(1)
 		}
 	} else if !*askUserPassPtr {
 		if userCreds.Password == "" {
-			fmt.Println("A password is required.")
+			logger.Error("A password is required.")
 			os.Exit(1)
 		}
 	}

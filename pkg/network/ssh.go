@@ -3,11 +3,11 @@ package network
 import (
 	"fmt"
 	"io"
-	"log"
 	"regexp"
 	"sync"
 	"time"
 
+	"github.com/automatico/jato/internal/logger"
 	"github.com/automatico/jato/internal/utils"
 	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
@@ -70,34 +70,34 @@ func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) SSHCo
 
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), clientConfig)
 	if err != nil {
-		log.Fatalf("Failed to dial: %s", err)
+		logger.Error(fmt.Sprintf("Failed to dial: %s", err))
 	}
 
 	session, err := conn.NewSession()
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
 
 	stdOut, err := session.StdoutPipe()
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
 
 	stdIn, err := session.StdinPipe()
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
 
 	err = session.RequestPty("xterm", 0, 200, modes)
 	if err != nil {
 		session.Close()
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
 
 	err = session.Shell()
 	if err != nil {
 		session.Close()
-		fmt.Println(err)
+		logger.Error(fmt.Sprintf("%s", err))
 	}
 
 	sshConn.Session = session
