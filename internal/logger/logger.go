@@ -13,7 +13,6 @@ var (
 )
 
 func init() {
-
 	infoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime)
 	warningLogger = log.New(os.Stderr, "WARNING: ", log.Ldate|log.Ltime)
 	errorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime)
