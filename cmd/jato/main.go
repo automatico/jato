@@ -36,13 +36,15 @@ func main() {
 	// CLI output
 	t, err := template.New("output").Parse(templates.CliRunner)
 	if err != nil {
-		panic(err)
+		logger.Error(fmt.Sprintf("%s", err))
+		os.Exit(1)
 	}
 
 	err = t.Execute(os.Stdout, templateData)
 
 	if err != nil {
-		panic(err)
+		logger.Error(fmt.Sprintf("%s", err))
+		os.Exit(1)
 	}
 
 	for _, d := range cliParams.Devices.Devices {
@@ -186,7 +188,8 @@ func main() {
 
 		t, err := template.New("results").Parse(templates.CliResult)
 		if err != nil {
-			panic(err)
+			logger.Error(fmt.Sprintf("%s", err))
+			os.Exit(1)
 		}
 
 		fmt.Print(terminal.Banner("Job Results"))
@@ -195,7 +198,8 @@ func main() {
 			err = t.Execute(os.Stdout, r)
 
 			if err != nil {
-				panic(err)
+				logger.Error(fmt.Sprintf("%s", err))
+				os.Exit(1)
 			}
 		}
 
