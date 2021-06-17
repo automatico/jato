@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	CiscoASAUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.\\-_@()/:]{1,63}>\s$`)
-	CiscoASASuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.\-_@/:]{1,63}#\s$`)
-	CiscoASAConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9.\-_@/:]{1,63}\(config[a-z0-9.\-@/:\+]{0,32}\)#\s$`)
+	CiscoASAUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9\-]{1,63}>\s$`)
+	CiscoASASuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9\-]{1,63}#\s$`)
+	CiscoASAConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)[a-z0-9\-]{1,63}\(config[a-z0-9.\-@/:\+]{0,32}\)#\s$`)
 )
 
 // CiscoASADevice implements the TelnetDevice
