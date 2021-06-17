@@ -10,12 +10,14 @@ var (
 	infoLogger    *log.Logger
 	warningLogger *log.Logger
 	errorLogger   *log.Logger
+	fatalLogger   *log.Logger
 )
 
 func init() {
 	infoLogger = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime)
 	warningLogger = log.New(os.Stderr, "WARNING: ", log.Ldate|log.Ltime)
 	errorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime)
+	fatalLogger = log.New(os.Stderr, "FATAL: ", log.Ldate|log.Ltime)
 }
 
 func Debug(s string) {
@@ -32,4 +34,9 @@ func Warning(s string) {
 
 func Error(s string) {
 	errorLogger.Println(s)
+}
+
+func Fatal(v ...interface{}) {
+	fatalLogger.Println(fmt.Sprint(v...))
+	os.Exit(1)
 }

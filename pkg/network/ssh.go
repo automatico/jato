@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"regexp"
 	"sync"
 	"time"
@@ -12,13 +13,15 @@ import (
 	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 type SSHParams struct {
-	Port                int  `json:"port"`
-	InsecureConnection  bool `json:"insecureConnection"`
-	InsecureCyphers     bool `json:"insecureCyphers"`
-	InsecureKeyExchange bool `json:"insecureKeyExchange"`
+	Port                int    `json:"port"`
+	KnownHostsFile      string `json:"knownHostsFile"`
+	InsecureConnection  bool   `json:"insecureConnection"`
+	InsecureCyphers     bool   `json:"insecureCyphers"`
+	InsecureKeyExchange bool   `json:"insecureKeyExchange"`
 }
 
 type SSHConn struct {
@@ -33,23 +36,51 @@ type SSHDevice interface {
 	DisconnectSSH() error
 }
 
-func SSHClientConfig(username string, password string, insecureConnection bool, insecureCyphers bool, InsecureKeyExchange bool) *ssh.ClientConfig {
-	c := &ssh.ClientConfig{
-		User: username,
+func SSHClientConfig(c data.Credentials, s SSHParams) *ssh.ClientConfig {
+	cr := &ssh.ClientConfig{
+		User: c.Username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
+			ssh.Password(c.Password),
 		},
 	}
-	if insecureConnection {
-		c.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+
+	if c.SSHKeyFile != "" { // prefer connection with an SSH key file.
+		key, err := ioutil.ReadFile(c.SSHKeyFile)
+		if err != nil {
+			logger.Fatal("unable to read private key: %v", err)
+		}
+		signer, err := ssh.ParsePrivateKey(key)
+		if err != nil {
+			logger.Fatal("unable to parse private key: %v", err)
+		}
+		cr.Auth = append(cr.Auth, ssh.PublicKeys(signer))
+
+	} else { // if no ssh key use password auth.
+		if c.Password == "" {
+			logger.Fatal("an SSH key or password is required.")
+		}
+		cr.Auth = append(cr.Auth, ssh.Password(c.Password))
 	}
-	if insecureCyphers {
-		c.Config.Ciphers = append(c.Config.Ciphers, constant.InsecureSSHCyphers...)
+
+	if s.InsecureConnection {
+		cr.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+	} else {
+		hostKeyCallback, err := knownhosts.New(s.KnownHostsFile)
+		if err != nil {
+			logger.Fatal("could not create hostkeycallback function: ", err)
+		}
+		cr.HostKeyCallback = hostKeyCallback
 	}
-	if InsecureKeyExchange {
-		c.KeyExchanges = append(c.KeyExchanges, constant.InsecureSSHKeyAlgorithms...)
+
+	if s.InsecureCyphers {
+		cr.Config.Ciphers = append(cr.Config.Ciphers, constant.InsecureSSHCyphers...)
 	}
-	return c
+
+	if s.InsecureKeyExchange {
+		cr.KeyExchanges = append(cr.KeyExchanges, constant.InsecureSSHKeyAlgorithms...)
+	}
+
+	return cr
 }
 
 func InitSSHParams(s *SSHParams) {

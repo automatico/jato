@@ -33,13 +33,7 @@ type AristaEOSDevice struct {
 
 func (d *AristaEOSDevice) ConnectWithSSH() error {
 
-	clientConfig := network.SSHClientConfig(
-		d.Credentials.Username,
-		d.Credentials.Password,
-		d.SSHParams.InsecureConnection,
-		d.SSHParams.InsecureCyphers,
-		d.SSHParams.InsecureKeyExchange,
-	)
+	clientConfig := network.SSHClientConfig(d.Credentials, d.SSHParams)
 
 	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 
