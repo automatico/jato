@@ -18,6 +18,7 @@ import (
 var aristaEOSDevices []driver.AristaEOSDevice
 var arubaAOSCXDevices []driver.ArubaAOSCXDevice
 var ciscoAireOSDevices []driver.CiscoAireOSDevice
+var ciscoASADevices []driver.CiscoASADevice
 var ciscoIOSDevices []driver.CiscoIOSDevice
 var ciscoIOSXRDevices []driver.CiscoIOSXRDevice
 var ciscoNXOSDevices []driver.CiscoNXOSDevice
@@ -62,29 +63,32 @@ func main() {
 		vendorPlatform := fmt.Sprintf("%s_%s", d.Vendor, d.Platform)
 		switch vendorPlatform {
 		case "arista_eos":
-			ad := driver.NewAristaEOSDevice(d)
-			aristaEOSDevices = append(aristaEOSDevices, ad)
+			nd := driver.NewAristaEOSDevice(d)
+			aristaEOSDevices = append(aristaEOSDevices, nd)
 		case "aruba_aoscx":
-			ad := driver.NewArubaAOSCXDevice(d)
-			arubaAOSCXDevices = append(arubaAOSCXDevices, ad)
+			nd := driver.NewArubaAOSCXDevice(d)
+			arubaAOSCXDevices = append(arubaAOSCXDevices, nd)
 		case "cisco_aireos":
-			cd := driver.NewCiscoAireOSDevice(d)
-			ciscoAireOSDevices = append(ciscoAireOSDevices, cd)
+			nd := driver.NewCiscoAireOSDevice(d)
+			ciscoAireOSDevices = append(ciscoAireOSDevices, nd)
+		case "cisco_asa":
+			nd := driver.NewCiscoASADevice(d)
+			ciscoASADevices = append(ciscoASADevices, nd)
 		case "cisco_ios":
-			cd := driver.NewCiscoIOSDevice(d)
-			ciscoIOSDevices = append(ciscoIOSDevices, cd)
+			nd := driver.NewCiscoIOSDevice(d)
+			ciscoIOSDevices = append(ciscoIOSDevices, nd)
 		case "cisco_iosxr":
-			cd := driver.NewCiscoIOSXRDevice(d)
-			ciscoIOSXRDevices = append(ciscoIOSXRDevices, cd)
+			nd := driver.NewCiscoIOSXRDevice(d)
+			ciscoIOSXRDevices = append(ciscoIOSXRDevices, nd)
 		case "cisco_nxos":
-			cd := driver.NewCiscoNXOSDevice(d)
-			ciscoNXOSDevices = append(ciscoNXOSDevices, cd)
+			nd := driver.NewCiscoNXOSDevice(d)
+			ciscoNXOSDevices = append(ciscoNXOSDevices, nd)
 		case "cisco_smb":
-			cd := driver.NewCiscoSMBDevice(d)
-			ciscoSMBDevices = append(ciscoSMBDevices, cd)
+			nd := driver.NewCiscoSMBDevice(d)
+			ciscoSMBDevices = append(ciscoSMBDevices, nd)
 		case "juniper_junos":
-			jd := driver.NewJuniperJunosDevice(d)
-			juniperJunosDevices = append(juniperJunosDevices, jd)
+			nd := driver.NewJuniperJunosDevice(d)
+			juniperJunosDevices = append(juniperJunosDevices, nd)
 		default:
 			logger.Warning(fmt.Sprintf("device: %s with vendor: %s and platform: %s not supported", d.Name, d.Vendor, d.Platform))
 		}
@@ -118,6 +122,15 @@ func main() {
 
 		wg.Add(len(ciscoAireOSDevices))
 		for _, dev := range ciscoAireOSDevices {
+			dev := dev // lock the host or the same host can run more than once
+			switch dev.Connector {
+			case "ssh":
+				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+			}
+		}
+
+		wg.Add(len(ciscoASADevices))
+		for _, dev := range ciscoASADevices {
 			dev := dev // lock the host or the same host can run more than once
 			switch dev.Connector {
 			case "ssh":
@@ -175,6 +188,7 @@ func main() {
 		devTotal := len(aristaEOSDevices) +
 			len(arubaAOSCXDevices) +
 			len(ciscoAireOSDevices) +
+			len(ciscoASADevices) +
 			len(ciscoIOSDevices) +
 			len(ciscoIOSXRDevices) +
 			len(ciscoNXOSDevices) +

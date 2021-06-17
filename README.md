@@ -10,6 +10,7 @@ Go ~v1.11+
 | Arista  | EOS      | :heavy_check_mark: | :x: |
 | Aruba   | AOS-CX   | :heavy_check_mark: | :red_circle: |
 | Cisco   | AireOS   | :heavy_check_mark: | :red_circle: |
+| Cisco   | ASA      | :heavy_check_mark: | :red_circle: |
 | Cisco   | IOS      | :heavy_check_mark: | :heavy_check_mark: |
 | Cisco   | IOS-XR   | :heavy_check_mark: | :red_circle: |
 | Cisco   | NXOS     | :heavy_check_mark: | :red_circle: |
@@ -76,6 +77,7 @@ Create a `devices.json` file with a list of devices to run against
 | arista  | eos      | ssh         |
 | aruba   | aoscx    | ssh         |
 | cisco   | aireos   | ssh         |
+| cisco   | asa      | ssh         |
 | cisco   | ios      | ssh, telnet |
 | cisco   | iosxr    | ssh         |
 | cisco   | nxos     | ssh         |
