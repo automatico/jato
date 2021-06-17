@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"sync"
 	"time"
@@ -18,6 +19,8 @@ import (
 
 type SSHParams struct {
 	Port                int    `json:"port"`
+	KeyBasedAuth        bool   `json:"keyBasedAuth"`
+	PasswordBasedAuth   bool   `json:"passwordBasedAuth"`
 	KnownHostsFile      string `json:"knownHostsFile"`
 	InsecureConnection  bool   `json:"insecureConnection"`
 	InsecureCyphers     bool   `json:"insecureCyphers"`
@@ -37,14 +40,16 @@ type SSHDevice interface {
 }
 
 func SSHClientConfig(c data.Credentials, s SSHParams) *ssh.ClientConfig {
-	cr := &ssh.ClientConfig{
+	conf := &ssh.ClientConfig{
 		User: c.Username,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(c.Password),
-		},
 	}
 
-	if c.SSHKeyFile != "" { // prefer connection with an SSH key file.
+	if s.KnownHostsFile == "" {
+		s.KnownHostsFile = constant.SSHKnownHostsFile
+	}
+
+	// Setup  authentication method
+	if c.SSHKeyFile != "" { // prefer connection with an SSH key file
 		key, err := ioutil.ReadFile(c.SSHKeyFile)
 		if err != nil {
 			logger.Fatal("unable to read private key: %v", err)
@@ -53,39 +58,53 @@ func SSHClientConfig(c data.Credentials, s SSHParams) *ssh.ClientConfig {
 		if err != nil {
 			logger.Fatal("unable to parse private key: %v", err)
 		}
-		cr.Auth = append(cr.Auth, ssh.PublicKeys(signer))
+		conf.Auth = append(conf.Auth, ssh.PublicKeys(signer))
 
-	} else { // if no ssh key use password auth.
-		if c.Password == "" {
-			logger.Fatal("an SSH key or password is required.")
-		}
-		cr.Auth = append(cr.Auth, ssh.Password(c.Password))
 	}
+	// if no ssh key use password auth
+	if c.Password == "" {
+		logger.Fatal("an SSH key or password is required.")
+	}
+	conf.Auth = append(conf.Auth, ssh.Password(c.Password))
 
-	if s.InsecureConnection {
-		cr.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+	// Setup remote machines host key checking
+	if s.InsecureConnection { // NOT RECOMMENDED FOR PRODUCTION
+		conf.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 	} else {
 		hostKeyCallback, err := knownhosts.New(s.KnownHostsFile)
 		if err != nil {
 			logger.Fatal("could not create hostkeycallback function: ", err)
 		}
-		cr.HostKeyCallback = hostKeyCallback
+		conf.HostKeyCallback = hostKeyCallback
 	}
 
 	if s.InsecureCyphers {
-		cr.Config.Ciphers = append(cr.Config.Ciphers, constant.InsecureSSHCyphers...)
+		conf.Config.Ciphers = append(conf.Config.Ciphers, constant.InsecureSSHCyphers...)
 	}
 
 	if s.InsecureKeyExchange {
-		cr.KeyExchanges = append(cr.KeyExchanges, constant.InsecureSSHKeyAlgorithms...)
+		conf.KeyExchanges = append(conf.KeyExchanges, constant.InsecureSSHKeyAlgorithms...)
 	}
 
-	return cr
+	return conf
 }
 
 func InitSSHParams(s *SSHParams) {
 	if s.Port == 0 {
 		s.Port = constant.SSHPort
+	}
+	if s.KnownHostsFile == "" {
+		s.KnownHostsFile = constant.SSHKnownHostsFile
+	}
+}
+
+func createKnownHosts(s string) {
+	if _, err := os.Stat(s); os.IsNotExist(err) {
+		f, err := os.OpenFile(constant.SSHKnownHostsFile, os.O_CREATE, 0600)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		f.Close()
 	}
 }
 
@@ -101,34 +120,34 @@ func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) SSHCo
 
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), clientConfig)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to dial: %s", err))
+		logger.Error("Failed to dial: %s", err)
 	}
 
 	session, err := conn.NewSession()
 	if err != nil {
-		logger.Error(fmt.Sprintf("%s", err))
+		logger.Error(err)
 	}
 
 	stdOut, err := session.StdoutPipe()
 	if err != nil {
-		logger.Error(fmt.Sprintf("%s", err))
+		logger.Error(err)
 	}
 
 	stdIn, err := session.StdinPipe()
 	if err != nil {
-		logger.Error(fmt.Sprintf("%s", err))
+		logger.Error(err)
 	}
 
 	err = session.RequestPty("xterm", 0, 200, modes)
 	if err != nil {
 		session.Close()
-		logger.Error(fmt.Sprintf("%s", err))
+		logger.Error(err)
 	}
 
 	err = session.Shell()
 	if err != nil {
 		session.Close()
-		logger.Error(fmt.Sprintf("%s", err))
+		logger.Error(err)
 	}
 
 	sshConn.Session = session
@@ -218,7 +237,7 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 func RunWithSSH(sd SSHDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
 	err := sd.ConnectWithSSH()
 	if err != nil {
-		logger.Error(fmt.Sprintf("%s", err))
+		logger.Error(err)
 	}
 	defer sd.DisconnectSSH()
 	defer wg.Done()

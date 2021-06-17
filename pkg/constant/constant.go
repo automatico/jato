@@ -1,16 +1,20 @@
 package constant
 
-import "regexp"
-
-const (
-	SSHPort    int = 22
-	TelnetPort int = 23
+import (
+	"os"
+	"path/filepath"
+	"regexp"
 )
 
-var (
-	UsernameRE *regexp.Regexp = regexp.MustCompile(`(?im)^username:$`)
-	PasswordRE *regexp.Regexp = regexp.MustCompile(`(?im)^password:$`)
-)
+const SSHPort = 22
+const TelnetPort = 23
+
+var LoginRE = regexp.MustCompile(`(?im)^login:$`)
+var UsernameRE = regexp.MustCompile(`(?im)^username:$`)
+var PasswordRE = regexp.MustCompile(`(?im)^password:$`)
+
+var SSHKnownHostsFile = filepath.Join(os.Getenv("HOME"), ".ssh", "known_hosts")
+var SSHKeyFile = filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 
 var InsecureSSHCyphers = []string{
 	"aes128-ctr",

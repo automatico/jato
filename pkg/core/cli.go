@@ -7,7 +7,6 @@ import (
 	"syscall"
 
 	"github.com/automatico/jato/internal/logger"
-	"github.com/automatico/jato/internal/utils"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/driver"
 	"golang.org/x/term"
@@ -51,8 +50,7 @@ func CLI() Params {
 	if *userPtr != "" {
 		params.Credentials.Username = *userPtr
 	} else if params.Credentials.Username == "" {
-		logger.Error("A username is required.")
-		os.Exit(1)
+		logger.Fatal("A username is required.")
 	}
 
 	// Password
@@ -62,22 +60,20 @@ func CLI() Params {
 		*userPass, err = promptSecret("Enter user password:")
 		params.Credentials.Password = *userPass
 		if err != nil {
-			logger.Error(fmt.Sprintf("%s", err))
-			os.Exit(1)
+			logger.Fatal(fmt.Sprintf("%s", err))
 		}
 	} else if !*askUserPassPtr {
 		if userCreds.Password == "" {
-			logger.Error("A password is required.")
-			os.Exit(1)
+			logger.Fatal("A password is required.")
 		}
 	}
 
 	// Devices
-	utils.FileStat(*devicesPtr)
+	FileStat(*devicesPtr)
 	params.Devices = LoadDevices(*devicesPtr)
 
 	// Commands
-	utils.FileStat(*commandsPtr)
+	FileStat(*commandsPtr)
 	params.Commands = LoadCommands(*commandsPtr)
 
 	// No Op

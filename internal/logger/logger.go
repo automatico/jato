@@ -24,16 +24,16 @@ func Debug(s string) {
 	fmt.Printf("DEBUG => %s\n", s)
 }
 
-func Info(s string) {
-	infoLogger.Println(s)
+func Info(v ...interface{}) {
+	infoLogger.Println(fmt.Sprint(v...))
 }
 
-func Warning(s string) {
-	warningLogger.Println(s)
+func Warning(v ...interface{}) {
+	warningLogger.Println(fmt.Sprint(v...))
 }
 
-func Error(s string) {
-	errorLogger.Println(s)
+func Error(v ...interface{}) {
+	errorLogger.Println(fmt.Sprint(v...))
 }
 
 func Fatal(v ...interface{}) {

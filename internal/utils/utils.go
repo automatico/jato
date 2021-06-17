@@ -1,9 +1,7 @@
 package utils
 
 import (
-	"fmt"
 	"html/template"
-	"os"
 	"strings"
 
 	"github.com/automatico/jato/internal/logger"
@@ -31,17 +29,7 @@ func CleanOutput(s string) string {
 func LoadTemplate(s string) *template.Template {
 	t, err := template.ParseFiles(s)
 	if err != nil {
-		logger.Error(fmt.Sprintf("error loading template: %s", err))
-		os.Exit(1)
+		logger.Fatal("error loading template: %s", err)
 	}
 	return t
-}
-
-// FileStat checks if a file exists and is readable
-func FileStat(filename string) {
-	_, err := os.Stat(filename)
-	if err != nil {
-		logger.Error(fmt.Sprintf("filename: '%s' does not exist or is not readable.", filename))
-		os.Exit(1)
-	}
 }
