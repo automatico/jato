@@ -98,9 +98,12 @@ func InitSSHParams(s *SSHParams) {
 	}
 }
 
+// TODO: createKnownHosts should create the known hosts
+// file if it does not exist.
+// https://cyruslab.net/2020/10/23/golang-how-to-write-ssh-hostkeycallback/
 func createKnownHosts(s string) {
 	if _, err := os.Stat(s); os.IsNotExist(err) {
-		f, err := os.OpenFile(constant.SSHKnownHostsFile, os.O_CREATE, 0600)
+		f, err := os.OpenFile(s, os.O_CREATE, 0600)
 		if err != nil {
 			logger.Fatal(err)
 		}
