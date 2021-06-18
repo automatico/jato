@@ -35,7 +35,7 @@ func CLI() Params {
 	vars := data.Variables{}
 
 	if *versionPtr {
-		fmt.Printf("Jato version: %s\n", version)
+		fmt.Printf("jato version: %s\n", version)
 		os.Exit(0)
 	}
 
@@ -50,7 +50,7 @@ func CLI() Params {
 	if *userPtr != "" {
 		params.Credentials.Username = *userPtr
 	} else if params.Credentials.Username == "" {
-		logger.Fatal("A username is required.")
+		logger.Fatal("a username is required")
 	}
 
 	// Password
@@ -60,20 +60,24 @@ func CLI() Params {
 		*userPass, err = promptSecret("Enter user password:")
 		params.Credentials.Password = *userPass
 		if err != nil {
-			logger.Fatal(fmt.Sprintf("%s", err))
+			logger.Fatal(err)
 		}
 	} else if !*askUserPassPtr {
 		if userCreds.Password == "" {
-			logger.Fatal("A password is required.")
+			logger.Fatal("a password is required")
 		}
 	}
 
 	// Devices
-	FileStat(*devicesPtr)
+	if err := FileStat(*devicesPtr); err != nil {
+		logger.Fatalf("device file does not exist: %v", *devicesPtr)
+	}
 	params.Devices = LoadDevices(*devicesPtr)
 
 	// Commands
-	FileStat(*commandsPtr)
+	if err := FileStat(*commandsPtr); err != nil {
+		logger.Fatalf("command file does not exist: %v", *commandsPtr)
+	}
 	params.Commands = LoadCommands(*commandsPtr)
 
 	// No Op

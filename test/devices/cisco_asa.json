@@ -3,7 +3,7 @@
     {
       "name": "asav-01", "ip": "192.168.255.153", "vendor": "cisco", "platform": "asa", "connector": "ssh",
       "sshParams": {
-        "insecureConnection": true
+        "insecureConnection": false
       }
     }
   ]

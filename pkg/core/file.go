@@ -125,9 +125,10 @@ func CreateDir(s string) {
 }
 
 // FileStat checks if a file exists and is readable
-func FileStat(filename string) {
+func FileStat(filename string) error {
 	_, err := os.Stat(filename)
 	if err != nil {
-		logger.Fatal("filename: '%s' does not exist or is not readable.", err)
+		return err
 	}
+	return nil
 }

@@ -35,7 +35,10 @@ func (d *JuniperJunosDevice) ConnectWithSSH() error {
 
 	clientConfig := network.SSHClientConfig(d.Credentials, d.SSHParams)
 
-	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
+	sshConn, err := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
+	if err != nil {
+		return err
+	}
 
 	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
 

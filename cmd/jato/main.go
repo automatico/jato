@@ -37,13 +37,13 @@ func main() {
 	// CLI output
 	t, err := template.New("output").Parse(templates.CliRunner)
 	if err != nil {
-		logger.Fatal("%s", err)
+		logger.Fatal(err)
 	}
 
 	err = t.Execute(os.Stdout, templateData)
 
 	if err != nil {
-		logger.Fatal("%s", err)
+		logger.Fatal(err)
 	}
 
 	for _, d := range cliParams.Devices.Devices {
@@ -88,7 +88,7 @@ func main() {
 			nd := driver.NewJuniperJunosDevice(d)
 			juniperJunosDevices = append(juniperJunosDevices, nd)
 		default:
-			logger.Warning("device: %s with vendor: %s and platform: %s not supported", d.Name, d.Vendor, d.Platform)
+			logger.Warningf("device: %s with vendor: %s and platform: %s not supported", d.Name, d.Vendor, d.Platform)
 		}
 	}
 
@@ -200,7 +200,7 @@ func main() {
 
 		t, err := template.New("results").Parse(templates.CliResult)
 		if err != nil {
-			logger.Fatal("%s", err)
+			logger.Fatal(err)
 		}
 
 		fmt.Print(terminal.Banner("Job Results"))
@@ -209,7 +209,7 @@ func main() {
 			err = t.Execute(os.Stdout, r)
 
 			if err != nil {
-				logger.Fatal("%s", err)
+				logger.Fatal(err)
 			}
 		}
 

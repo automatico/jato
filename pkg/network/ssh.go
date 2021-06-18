@@ -52,11 +52,11 @@ func SSHClientConfig(c data.Credentials, s SSHParams) *ssh.ClientConfig {
 	if c.SSHKeyFile != "" { // prefer connection with an SSH key file
 		key, err := ioutil.ReadFile(c.SSHKeyFile)
 		if err != nil {
-			logger.Fatal("unable to read private key: %v", err)
+			logger.Fatalf("unable to read private key: %v", err)
 		}
 		signer, err := ssh.ParsePrivateKey(key)
 		if err != nil {
-			logger.Fatal("unable to parse private key: %v", err)
+			logger.Fatalf("unable to parse private key: %v", err)
 		}
 		conf.Auth = append(conf.Auth, ssh.PublicKeys(signer))
 
@@ -73,7 +73,7 @@ func SSHClientConfig(c data.Credentials, s SSHParams) *ssh.ClientConfig {
 	} else {
 		hostKeyCallback, err := knownhosts.New(s.KnownHostsFile)
 		if err != nil {
-			logger.Fatal("could not create hostkeycallback function: ", err)
+			logger.Fatalf("could not create hostkeycallback function: %v", err)
 		}
 		conf.HostKeyCallback = hostKeyCallback
 	}
@@ -108,7 +108,7 @@ func createKnownHosts(s string) {
 	}
 }
 
-func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) SSHConn {
+func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) (SSHConn, error) {
 
 	sshConn := SSHConn{}
 
@@ -120,41 +120,41 @@ func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) SSHCo
 
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), clientConfig)
 	if err != nil {
-		logger.Error("Failed to dial: %s", err)
+		return sshConn, err
 	}
 
 	session, err := conn.NewSession()
 	if err != nil {
-		logger.Error(err)
+		return sshConn, err
 	}
 
 	stdOut, err := session.StdoutPipe()
 	if err != nil {
-		logger.Error(err)
+		return sshConn, err
 	}
 
 	stdIn, err := session.StdinPipe()
 	if err != nil {
-		logger.Error(err)
+		return sshConn, err
 	}
 
 	err = session.RequestPty("xterm", 0, 200, modes)
 	if err != nil {
 		session.Close()
-		logger.Error(err)
+		return sshConn, err
 	}
 
 	err = session.Shell()
 	if err != nil {
 		session.Close()
-		logger.Error(err)
+		return sshConn, err
 	}
 
 	sshConn.Session = session
 	sshConn.StdIn = stdIn
 	sshConn.StdOut = stdOut
 
-	return sshConn
+	return sshConn, nil
 
 }
 
@@ -225,7 +225,7 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 		case ret := <-buffRead:
 			ch <- ret
 		case <-time.After(time.Duration(timeout) * time.Second):
-			logger.Error(fmt.Sprintf("Waiting for '%s' took longer than timeout: %d", expect, timeout))
+			logger.Errorf("Waiting for '%s' took longer than timeout: %d", expect, timeout)
 		}
 	}(stdOut, expect)
 
