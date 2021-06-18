@@ -4,7 +4,7 @@
       "name": "iosxr-1", "ip": "192.168.255.162", "vendor": "cisco", "platform": "iosxr", "connector": "ssh",
       "sshParams": {
         "insecureConnection": true,
-        "insecureCyphers": true,
+        "insecureCiphers": true,
         "insecureKeyExchange": true
       },
       "variables": {

@@ -4,7 +4,7 @@
       "name": "iosv-1", "ip": "192.168.255.150", "vendor": "cisco", "platform": "ios", "connector": "ssh",
       "sshParams": {
         "insecureConnection": true,
-        "insecureCyphers": true,
+        "insecureCiphers": true,
         "insecureKeyExchange": true
       }
     },

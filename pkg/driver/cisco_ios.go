@@ -37,6 +37,10 @@ type CiscoIOSDevice struct {
 	data.Variables
 }
 
+func (d CiscoIOSDevice) GetName() string {
+	return d.Name
+}
+
 func (d *CiscoIOSDevice) ConnectWithTelnet() error {
 
 	conn, err := telnet.DialTo(fmt.Sprintf("%s:%d", d.IP, d.TelnetParams.Port))
@@ -105,15 +109,15 @@ func (d CiscoIOSDevice) SendCommandsWithTelnet(commands []string) data.Result {
 
 func (d *CiscoIOSDevice) ConnectWithSSH() error {
 
-	clientConfig := network.SSHClientConfig(
-		d.Credentials.Username,
-		d.Credentials.Password,
-		d.SSHParams.InsecureConnection,
-		d.SSHParams.InsecureCyphers,
-		d.SSHParams.InsecureKeyExchange,
-	)
+	clientConfig, err := network.SSHClientConfig(d.Credentials, d.SSHParams)
+	if err != nil {
+		return err
+	}
 
-	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
+	sshConn, err := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
+	if err != nil {
+		return err
+	}
 
 	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
 

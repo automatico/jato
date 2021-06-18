@@ -1,8 +1,10 @@
 package network
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"regexp"
 	"sync"
 	"time"
@@ -12,13 +14,17 @@ import (
 	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 type SSHParams struct {
-	Port                int  `json:"port"`
-	InsecureConnection  bool `json:"insecureConnection"`
-	InsecureCyphers     bool `json:"insecureCyphers"`
-	InsecureKeyExchange bool `json:"insecureKeyExchange"`
+	Port                int    `json:"port"`
+	KeyBasedAuth        bool   `json:"keyBasedAuth"`
+	PasswordBasedAuth   bool   `json:"passwordBasedAuth"`
+	KnownHostsFile      string `json:"knownHostsFile"`
+	InsecureConnection  bool   `json:"insecureConnection"`
+	InsecureCiphers     bool   `json:"insecureCiphers"`
+	InsecureKeyExchange bool   `json:"insecureKeyExchange"`
 }
 
 type SSHConn struct {
@@ -31,34 +37,83 @@ type SSHDevice interface {
 	ConnectWithSSH() error
 	SendCommandsWithSSH([]string) data.Result
 	DisconnectSSH() error
+	GetName() string
 }
 
-func SSHClientConfig(username string, password string, insecureConnection bool, insecureCyphers bool, InsecureKeyExchange bool) *ssh.ClientConfig {
-	c := &ssh.ClientConfig{
-		User: username,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
+func SSHClientConfig(c data.Credentials, s SSHParams) (*ssh.ClientConfig, error) {
+	conf := &ssh.ClientConfig{
+		User: c.Username,
 	}
-	if insecureConnection {
-		c.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+
+	if s.KnownHostsFile == "" {
+		s.KnownHostsFile = constant.SSHKnownHostsFile
 	}
-	if insecureCyphers {
-		c.Config.Ciphers = append(c.Config.Ciphers, constant.InsecureSSHCyphers...)
+
+	// Setup  authentication method
+	if c.SSHKeyFile != "" { // prefer connection with an SSH key file
+		key, err := ioutil.ReadFile(c.SSHKeyFile)
+		if err != nil {
+			return conf, fmt.Errorf("unable to read private key: %v", err)
+		}
+		signer, err := ssh.ParsePrivateKey(key)
+		if err != nil {
+			return conf, fmt.Errorf("unable to parse private key: %v", err)
+		}
+		conf.Auth = append(conf.Auth, ssh.PublicKeys(signer))
+
 	}
-	if InsecureKeyExchange {
-		c.KeyExchanges = append(c.KeyExchanges, constant.InsecureSSHKeyAlgorithms...)
+	// if no ssh key use password auth
+	if c.Password == "" {
+		return conf, errors.New("an ssh key or password is required")
+
 	}
-	return c
+	conf.Auth = append(conf.Auth, ssh.Password(c.Password))
+
+	// Setup remote machines host key checking
+	if s.InsecureConnection { // NOT RECOMMENDED FOR PRODUCTION
+		conf.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+	} else {
+		hostKeyCallback, err := knownhosts.New(s.KnownHostsFile)
+		if err != nil {
+			return conf, fmt.Errorf("could not create hostkeycallback function: %v", err)
+		}
+		conf.HostKeyCallback = hostKeyCallback
+	}
+
+	if s.InsecureCiphers {
+		conf.Config.Ciphers = append(conf.Config.Ciphers, constant.InsecureSSHCiphers...)
+	}
+
+	if s.InsecureKeyExchange {
+		conf.KeyExchanges = append(conf.KeyExchanges, constant.InsecureSSHKeyAlgorithms...)
+	}
+
+	return conf, nil
 }
 
 func InitSSHParams(s *SSHParams) {
 	if s.Port == 0 {
 		s.Port = constant.SSHPort
 	}
+	if s.KnownHostsFile == "" {
+		s.KnownHostsFile = constant.SSHKnownHostsFile
+	}
 }
 
-func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) SSHConn {
+// TODO: createKnownHosts should create the known hosts
+// file if it does not exist.
+// https://cyruslab.net/2020/10/23/golang-how-to-write-ssh-hostkeycallback/
+// func createKnownHosts(s string) {
+// 	if _, err := os.Stat(s); os.IsNotExist(err) {
+// 		f, err := os.OpenFile(s, os.O_CREATE, 0600)
+// 		if err != nil {
+// 			logger.Fatal(err)
+// 		}
+// 		f.Close()
+// 	}
+// }
+
+func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) (SSHConn, error) {
 
 	sshConn := SSHConn{}
 
@@ -70,41 +125,41 @@ func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) SSHCo
 
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), clientConfig)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to dial: %s", err))
+		return sshConn, err
 	}
 
 	session, err := conn.NewSession()
 	if err != nil {
-		logger.Error(fmt.Sprintf("%s", err))
+		return sshConn, err
 	}
 
 	stdOut, err := session.StdoutPipe()
 	if err != nil {
-		logger.Error(fmt.Sprintf("%s", err))
+		return sshConn, err
 	}
 
 	stdIn, err := session.StdinPipe()
 	if err != nil {
-		logger.Error(fmt.Sprintf("%s", err))
+		return sshConn, err
 	}
 
 	err = session.RequestPty("xterm", 0, 200, modes)
 	if err != nil {
 		session.Close()
-		logger.Error(fmt.Sprintf("%s", err))
+		return sshConn, err
 	}
 
 	err = session.Shell()
 	if err != nil {
 		session.Close()
-		logger.Error(fmt.Sprintf("%s", err))
+		return sshConn, err
 	}
 
 	sshConn.Session = session
 	sshConn.StdIn = stdIn
 	sshConn.StdOut = stdOut
 
-	return sshConn
+	return sshConn, nil
 
 }
 
@@ -175,7 +230,7 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 		case ret := <-buffRead:
 			ch <- ret
 		case <-time.After(time.Duration(timeout) * time.Second):
-			logger.Error(fmt.Sprintf("Waiting for '%s' took longer than timeout: %d", expect, timeout))
+			logger.Errorf("Waiting for '%s' took longer than timeout: %d", expect, timeout)
 		}
 	}(stdOut, expect)
 
@@ -185,14 +240,24 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 // RunWithSSH is the entrypoint to run commands
 // against a device.
 func RunWithSSH(sd SSHDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
-	err := sd.ConnectWithSSH()
-	if err != nil {
-		logger.Error(fmt.Sprintf("%s", err))
-	}
-	defer sd.DisconnectSSH()
+
 	defer wg.Done()
 
-	result := sd.SendCommandsWithSSH(commands)
+	var result data.Result
 
-	ch <- result
+	err := sd.ConnectWithSSH()
+	if err != nil {
+		result.Device = sd.GetName()
+		result.Error = err
+		result.Timestamp = time.Now().Unix()
+		ch <- result
+
+	} else {
+		defer sd.DisconnectSSH()
+
+		result = sd.SendCommandsWithSSH(commands)
+
+		ch <- result
+	}
+
 }

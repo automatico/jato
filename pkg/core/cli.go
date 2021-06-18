@@ -7,13 +7,12 @@ import (
 	"syscall"
 
 	"github.com/automatico/jato/internal/logger"
-	"github.com/automatico/jato/internal/utils"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/driver"
 	"golang.org/x/term"
 )
 
-const version = "2021.06.10"
+const version = "2021.06.11"
 
 // Params contain the result of CLI input
 type Params struct {
@@ -36,7 +35,7 @@ func CLI() Params {
 	vars := data.Variables{}
 
 	if *versionPtr {
-		fmt.Printf("Jato version: %s\n", version)
+		fmt.Printf("jato version: %s\n", version)
 		os.Exit(0)
 	}
 
@@ -51,8 +50,7 @@ func CLI() Params {
 	if *userPtr != "" {
 		params.Credentials.Username = *userPtr
 	} else if params.Credentials.Username == "" {
-		logger.Error("A username is required.")
-		os.Exit(1)
+		logger.Fatal("a username is required")
 	}
 
 	// Password
@@ -62,22 +60,24 @@ func CLI() Params {
 		*userPass, err = promptSecret("Enter user password:")
 		params.Credentials.Password = *userPass
 		if err != nil {
-			logger.Error(fmt.Sprintf("%s", err))
-			os.Exit(1)
+			logger.Fatal(err)
 		}
 	} else if !*askUserPassPtr {
 		if userCreds.Password == "" {
-			logger.Error("A password is required.")
-			os.Exit(1)
+			logger.Fatal("a password is required")
 		}
 	}
 
 	// Devices
-	utils.FileStat(*devicesPtr)
+	if err := FileStat(*devicesPtr); err != nil {
+		logger.Fatalf("device file does not exist: %v", *devicesPtr)
+	}
 	params.Devices = LoadDevices(*devicesPtr)
 
 	// Commands
-	utils.FileStat(*commandsPtr)
+	if err := FileStat(*commandsPtr); err != nil {
+		logger.Fatalf("command file does not exist: %v", *commandsPtr)
+	}
 	params.Commands = LoadCommands(*commandsPtr)
 
 	// No Op

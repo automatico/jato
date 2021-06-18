@@ -31,17 +31,21 @@ type CiscoAireOSDevice struct {
 	data.Variables
 }
 
+func (d CiscoAireOSDevice) GetName() string {
+	return d.Name
+}
+
 func (d *CiscoAireOSDevice) ConnectWithSSH() error {
 
-	clientConfig := network.SSHClientConfig(
-		d.Credentials.Username,
-		d.Credentials.Password,
-		d.SSHParams.InsecureConnection,
-		d.SSHParams.InsecureCyphers,
-		d.SSHParams.InsecureKeyExchange,
-	)
+	clientConfig, err := network.SSHClientConfig(d.Credentials, d.SSHParams)
+	if err != nil {
+		return err
+	}
 
-	sshConn := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
+	sshConn, err := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
+	if err != nil {
+		return err
+	}
 
 	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
 
