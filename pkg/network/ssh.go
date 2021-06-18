@@ -63,7 +63,7 @@ func SSHClientConfig(c data.Credentials, s SSHParams) (*ssh.ClientConfig, error)
 
 	}
 	// if no ssh key use password auth
-	if c.Password == "" {
+	if c.Password == "" && c.SSHKeyFile == "" {
 		return conf, errors.New("an ssh key or password is required")
 
 	}
