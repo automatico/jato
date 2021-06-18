@@ -31,9 +31,15 @@ type CiscoSMBDevice struct {
 	data.Variables
 }
 
+func (d CiscoSMBDevice) GetName() string {
+	return d.Name
+}
 func (d *CiscoSMBDevice) ConnectWithSSH() error {
 
-	clientConfig := network.SSHClientConfig(d.Credentials, d.SSHParams)
+	clientConfig, err := network.SSHClientConfig(d.Credentials, d.SSHParams)
+	if err != nil {
+		return err
+	}
 
 	sshConn, err := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 	if err != nil {

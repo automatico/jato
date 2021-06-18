@@ -31,9 +31,16 @@ type AristaEOSDevice struct {
 	data.Variables
 }
 
+func (d AristaEOSDevice) GetName() string {
+	return d.Name
+}
+
 func (d *AristaEOSDevice) ConnectWithSSH() error {
 
-	clientConfig := network.SSHClientConfig(d.Credentials, d.SSHParams)
+	clientConfig, err := network.SSHClientConfig(d.Credentials, d.SSHParams)
+	if err != nil {
+		return err
+	}
 
 	sshConn, err := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 	if err != nil {

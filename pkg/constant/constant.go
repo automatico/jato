@@ -16,7 +16,7 @@ var PasswordRE = regexp.MustCompile(`(?im)^password:$`)
 var SSHKnownHostsFile = filepath.Join(os.Getenv("HOME"), ".ssh", "known_hosts")
 var SSHKeyFile = filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 
-var InsecureSSHCyphers = []string{
+var InsecureSSHCiphers = []string{
 	"aes128-ctr",
 	"aes192-ctr",
 	"aes256-ctr",

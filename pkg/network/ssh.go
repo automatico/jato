@@ -1,10 +1,10 @@
 package network
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"regexp"
 	"sync"
 	"time"
@@ -23,7 +23,7 @@ type SSHParams struct {
 	PasswordBasedAuth   bool   `json:"passwordBasedAuth"`
 	KnownHostsFile      string `json:"knownHostsFile"`
 	InsecureConnection  bool   `json:"insecureConnection"`
-	InsecureCyphers     bool   `json:"insecureCyphers"`
+	InsecureCiphers     bool   `json:"insecureCiphers"`
 	InsecureKeyExchange bool   `json:"insecureKeyExchange"`
 }
 
@@ -37,9 +37,10 @@ type SSHDevice interface {
 	ConnectWithSSH() error
 	SendCommandsWithSSH([]string) data.Result
 	DisconnectSSH() error
+	GetName() string
 }
 
-func SSHClientConfig(c data.Credentials, s SSHParams) *ssh.ClientConfig {
+func SSHClientConfig(c data.Credentials, s SSHParams) (*ssh.ClientConfig, error) {
 	conf := &ssh.ClientConfig{
 		User: c.Username,
 	}
@@ -52,18 +53,19 @@ func SSHClientConfig(c data.Credentials, s SSHParams) *ssh.ClientConfig {
 	if c.SSHKeyFile != "" { // prefer connection with an SSH key file
 		key, err := ioutil.ReadFile(c.SSHKeyFile)
 		if err != nil {
-			logger.Fatalf("unable to read private key: %v", err)
+			return conf, fmt.Errorf("unable to read private key: %v", err)
 		}
 		signer, err := ssh.ParsePrivateKey(key)
 		if err != nil {
-			logger.Fatalf("unable to parse private key: %v", err)
+			return conf, fmt.Errorf("unable to parse private key: %v", err)
 		}
 		conf.Auth = append(conf.Auth, ssh.PublicKeys(signer))
 
 	}
 	// if no ssh key use password auth
 	if c.Password == "" {
-		logger.Fatal("an SSH key or password is required.")
+		return conf, errors.New("an ssh key or password is required")
+
 	}
 	conf.Auth = append(conf.Auth, ssh.Password(c.Password))
 
@@ -73,20 +75,20 @@ func SSHClientConfig(c data.Credentials, s SSHParams) *ssh.ClientConfig {
 	} else {
 		hostKeyCallback, err := knownhosts.New(s.KnownHostsFile)
 		if err != nil {
-			logger.Fatalf("could not create hostkeycallback function: %v", err)
+			return conf, fmt.Errorf("could not create hostkeycallback function: %v", err)
 		}
 		conf.HostKeyCallback = hostKeyCallback
 	}
 
-	if s.InsecureCyphers {
-		conf.Config.Ciphers = append(conf.Config.Ciphers, constant.InsecureSSHCyphers...)
+	if s.InsecureCiphers {
+		conf.Config.Ciphers = append(conf.Config.Ciphers, constant.InsecureSSHCiphers...)
 	}
 
 	if s.InsecureKeyExchange {
 		conf.KeyExchanges = append(conf.KeyExchanges, constant.InsecureSSHKeyAlgorithms...)
 	}
 
-	return conf
+	return conf, nil
 }
 
 func InitSSHParams(s *SSHParams) {
@@ -101,15 +103,15 @@ func InitSSHParams(s *SSHParams) {
 // TODO: createKnownHosts should create the known hosts
 // file if it does not exist.
 // https://cyruslab.net/2020/10/23/golang-how-to-write-ssh-hostkeycallback/
-func createKnownHosts(s string) {
-	if _, err := os.Stat(s); os.IsNotExist(err) {
-		f, err := os.OpenFile(s, os.O_CREATE, 0600)
-		if err != nil {
-			logger.Fatal(err)
-		}
-		f.Close()
-	}
-}
+// func createKnownHosts(s string) {
+// 	if _, err := os.Stat(s); os.IsNotExist(err) {
+// 		f, err := os.OpenFile(s, os.O_CREATE, 0600)
+// 		if err != nil {
+// 			logger.Fatal(err)
+// 		}
+// 		f.Close()
+// 	}
+// }
 
 func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) (SSHConn, error) {
 
@@ -238,14 +240,24 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 // RunWithSSH is the entrypoint to run commands
 // against a device.
 func RunWithSSH(sd SSHDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
-	err := sd.ConnectWithSSH()
-	if err != nil {
-		logger.Error(err)
-	}
-	defer sd.DisconnectSSH()
+
 	defer wg.Done()
 
-	result := sd.SendCommandsWithSSH(commands)
+	var result data.Result
 
-	ch <- result
+	err := sd.ConnectWithSSH()
+	if err != nil {
+		result.Device = sd.GetName()
+		result.Error = err
+		result.Timestamp = time.Now().Unix()
+		ch <- result
+
+	} else {
+		defer sd.DisconnectSSH()
+
+		result = sd.SendCommandsWithSSH(commands)
+
+		ch <- result
+	}
+
 }
