@@ -185,7 +185,7 @@ func SendCommandWithSSH(conn SSHConn, cmd string, expect *regexp.Regexp, timeout
 
 	cmdOut.Command = cmd
 	cmdOut.CommandU = util.Underscorer(cmd)
-	cmdOut.Output = util.CleanOutput(res)
+	cmdOut.Output = util.TruncateOutput(res)
 
 	return cmdOut, nil
 }
