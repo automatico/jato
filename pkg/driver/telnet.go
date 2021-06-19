@@ -1,4 +1,4 @@
-package network
+package driver
 
 import (
 	"errors"
@@ -16,12 +16,6 @@ import (
 
 type TelnetParams struct {
 	Port int `json:"port"`
-}
-
-type TelnetDevice interface {
-	ConnectWithTelnet() error
-	SendCommandsWithTelnet([]string) data.Result
-	DisconnectTelnet() error
 }
 
 func InitTelnetParams(s *TelnetParams) {
@@ -102,15 +96,15 @@ func ReadTelnet(r io.Reader, expect *regexp.Regexp, timeout int64) (string, erro
 	return string(result), nil
 }
 
-func RunWithTelnet(td TelnetDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
-	err := td.ConnectWithTelnet()
+func RunWithTelnet(nd NetDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
+	err := nd.ConnectWithTelnet()
 	if err != nil {
 		fmt.Println(err)
 	}
-	defer td.DisconnectTelnet()
+	defer nd.DisconnectTelnet()
 	defer wg.Done()
 
-	result := td.SendCommandsWithTelnet(commands)
+	result := nd.SendCommandsWithTelnet(commands)
 
 	ch <- result
 }

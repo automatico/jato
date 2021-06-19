@@ -9,6 +9,8 @@ import (
 const SSHPort = 22
 const TelnetPort = 23
 
+const Timeout = 5
+
 var LoginRE = regexp.MustCompile(`(?im)^login:$`)
 var UsernameRE = regexp.MustCompile(`(?im)^username:$`)
 var PasswordRE = regexp.MustCompile(`(?im)^password:$`)

@@ -2,52 +2,39 @@ package driver
 
 import (
 	"regexp"
-	"time"
-
-	"github.com/automatico/jato/pkg/data"
-	"github.com/automatico/jato/pkg/network"
 )
 
-var (
-	CiscoXRUserPromptRE      *regexp.Regexp = regexp.MustCompile(`(?im)^[a-z0-9.\-_@/:]{1,63}#\s?$`)
-	CiscoXRSuperUserPromptRE *regexp.Regexp = regexp.MustCompile(`(?im)^[a-z0-9.\-_@/:]{1,63}#\s?$`)
-	CiscoXRConfigPromptRE    *regexp.Regexp = regexp.MustCompile(`(?im)^[a-z0-9.\-_@/:]{1,63}\(config[a-z0-9.\-@/:\+]{0,32}\)#$`)
-)
+// NewCiscoIOSXRDevice takes a NetDevice and initializes
+// a CiscoIOSXRDevice.
+func NewCiscoIOSXRDevice(d NetDevice) NetDevice {
 
-// CiscoIOSXRDevice implements the TelnetDevice
-// and SSHDevice interfaces
-type CiscoIOSXRDevice struct {
-	IP                string
-	Name              string
-	Vendor            string
-	Platform          string
-	Connector         string
-	UserPromptRE      *regexp.Regexp
-	SuperUserPromptRE *regexp.Regexp
-	ConfigPromtRE     *regexp.Regexp
-	data.Credentials
-	network.SSHParams
-	network.SSHConn
-	data.Variables
+	// Prompts
+	d.UserPromptRE = regexp.MustCompile(`(?im)^[a-z0-9.\-_@/:]{1,63}#\s?$`)
+	d.SuperUserPromptRE = regexp.MustCompile(`(?im)^[a-z0-9.\-_@/:]{1,63}#\s?$`)
+	d.ConfigPromtRE = regexp.MustCompile(`(?im)^[a-z0-9.\-_@/:]{1,63}\(config[a-z0-9.\-@/:\+]{0,32}\)#$`)
+
+	// SSH Params
+	InitSSHParams(&d.SSHParams)
+
+	// Timeout
+	d.Timeout = 5
+
+	return d
 }
 
-func (d CiscoIOSXRDevice) GetName() string {
-	return d.Name
-}
+func CiscoIOSXRConnectWithSSH(d *NetDevice) error {
 
-func (d *CiscoIOSXRDevice) ConnectWithSSH() error {
-
-	clientConfig, err := network.SSHClientConfig(d.Credentials, d.SSHParams)
+	clientConfig, err := SSHClientConfig(d.Credentials, d.SSHParams)
 	if err != nil {
 		return err
 	}
 
-	sshConn, err := network.ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
+	sshConn, err := ConnectWithSSH(d.IP, d.SSHParams.Port, clientConfig)
 	if err != nil {
 		return err
 	}
 
-	network.ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
+	ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
 
 	d.SSHConn = sshConn
 
@@ -55,70 +42,4 @@ func (d *CiscoIOSXRDevice) ConnectWithSSH() error {
 	d.SendCommandWithSSH("terminal width 0")
 
 	return nil
-}
-
-func (d CiscoIOSXRDevice) DisconnectSSH() error {
-	return d.SSHConn.Session.Close()
-}
-
-func (d CiscoIOSXRDevice) SendCommandWithSSH(command string) data.Result {
-
-	result := data.Result{}
-
-	result.Device = d.Name
-	result.Timestamp = time.Now().Unix()
-
-	cmdOut, err := network.SendCommandWithSSH(d.SSHConn, command, d.SuperUserPromptRE, 2)
-	if err != nil {
-		result.OK = false
-		result.Error = err
-		return result
-	}
-
-	result.CommandOutputs = append(result.CommandOutputs, cmdOut)
-	result.OK = true
-	return result
-}
-
-func (d CiscoIOSXRDevice) SendCommandsWithSSH(commands []string) data.Result {
-
-	result := data.Result{}
-
-	result.Device = d.Name
-	result.Timestamp = time.Now().Unix()
-
-	cmdOut, err := network.SendCommandsWithSSH(d.SSHConn, commands, d.SuperUserPromptRE, 2)
-	if err != nil {
-		result.OK = false
-		result.Error = err
-		return result
-	}
-
-	result.CommandOutputs = cmdOut
-	result.OK = true
-	return result
-}
-
-// NewCiscoIOSXRDevice takes a NetDevice and initializes
-// a CiscoIOSXRDevice.
-func NewCiscoIOSXRDevice(nd NetDevice) CiscoIOSXRDevice {
-	d := CiscoIOSXRDevice{}
-	d.IP = nd.IP
-	d.Name = nd.Name
-	d.Vendor = nd.Vendor
-	d.Platform = nd.Platform
-	d.Connector = nd.Connector
-	d.Credentials = nd.Credentials
-	d.SSHParams = nd.SSHParams
-	d.Variables = nd.Variables
-
-	// Prompts
-	d.UserPromptRE = CiscoXRUserPromptRE
-	d.SuperUserPromptRE = CiscoXRSuperUserPromptRE
-	d.ConfigPromtRE = CiscoXRConfigPromptRE
-
-	// SSH Params
-	network.InitSSHParams(&d.SSHParams)
-
-	return d
 }

@@ -12,18 +12,9 @@ import (
 	"github.com/automatico/jato/pkg/core"
 	"github.com/automatico/jato/pkg/data"
 	"github.com/automatico/jato/pkg/driver"
-	"github.com/automatico/jato/pkg/network"
 )
 
-var aristaEOSDevices []driver.AristaEOSDevice
-var arubaAOSCXDevices []driver.ArubaAOSCXDevice
-var ciscoAireOSDevices []driver.CiscoAireOSDevice
-var ciscoASADevices []driver.CiscoASADevice
-var ciscoIOSDevices []driver.CiscoIOSDevice
-var ciscoIOSXRDevices []driver.CiscoIOSXRDevice
-var ciscoNXOSDevices []driver.CiscoNXOSDevice
-var ciscoSMBDevices []driver.CiscoSMBDevice
-var juniperJunosDevices []driver.JuniperJunosDevice
+var allDevices []driver.NetDevice
 
 func main() {
 
@@ -62,31 +53,31 @@ func main() {
 		switch vendorPlatform {
 		case "arista_eos":
 			nd := driver.NewAristaEOSDevice(d)
-			aristaEOSDevices = append(aristaEOSDevices, nd)
+			allDevices = append(allDevices, nd)
 		case "aruba_aoscx":
 			nd := driver.NewArubaAOSCXDevice(d)
-			arubaAOSCXDevices = append(arubaAOSCXDevices, nd)
+			allDevices = append(allDevices, nd)
 		case "cisco_aireos":
 			nd := driver.NewCiscoAireOSDevice(d)
-			ciscoAireOSDevices = append(ciscoAireOSDevices, nd)
+			allDevices = append(allDevices, nd)
 		case "cisco_asa":
 			nd := driver.NewCiscoASADevice(d)
-			ciscoASADevices = append(ciscoASADevices, nd)
+			allDevices = append(allDevices, nd)
 		case "cisco_ios":
 			nd := driver.NewCiscoIOSDevice(d)
-			ciscoIOSDevices = append(ciscoIOSDevices, nd)
+			allDevices = append(allDevices, nd)
 		case "cisco_iosxr":
 			nd := driver.NewCiscoIOSXRDevice(d)
-			ciscoIOSXRDevices = append(ciscoIOSXRDevices, nd)
+			allDevices = append(allDevices, nd)
 		case "cisco_nxos":
 			nd := driver.NewCiscoNXOSDevice(d)
-			ciscoNXOSDevices = append(ciscoNXOSDevices, nd)
+			allDevices = append(allDevices, nd)
 		case "cisco_smb":
 			nd := driver.NewCiscoSMBDevice(d)
-			ciscoSMBDevices = append(ciscoSMBDevices, nd)
+			allDevices = append(allDevices, nd)
 		case "juniper_junos":
 			nd := driver.NewJuniperJunosDevice(d)
-			juniperJunosDevices = append(juniperJunosDevices, nd)
+			allDevices = append(allDevices, nd)
 		default:
 			logger.Warningf("device: %s with vendor: %s and platform: %s not supported", d.Name, d.Vendor, d.Platform)
 		}
@@ -100,99 +91,18 @@ func main() {
 		ch := make(chan data.Result)
 		defer close(ch)
 
-		wg.Add(len(aristaEOSDevices))
-		for _, dev := range aristaEOSDevices {
+		wg.Add(len(allDevices))
+		for _, dev := range allDevices {
 			dev := dev // lock the host or the same host can run more than once
 			switch dev.Connector {
 			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
-			}
-		}
-
-		wg.Add(len(arubaAOSCXDevices))
-		for _, dev := range arubaAOSCXDevices {
-			dev := dev // lock the host or the same host can run more than once
-			switch dev.Connector {
-			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
-			}
-		}
-
-		wg.Add(len(ciscoAireOSDevices))
-		for _, dev := range ciscoAireOSDevices {
-			dev := dev // lock the host or the same host can run more than once
-			switch dev.Connector {
-			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
-			}
-		}
-
-		wg.Add(len(ciscoASADevices))
-		for _, dev := range ciscoASADevices {
-			dev := dev // lock the host or the same host can run more than once
-			switch dev.Connector {
-			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
-			}
-		}
-
-		wg.Add(len(ciscoIOSDevices))
-		for _, dev := range ciscoIOSDevices {
-			dev := dev // lock the host or the same host can run more than once
-			switch dev.Connector {
-			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
+				go driver.RunWithSSH(dev, cliParams.Commands.Commands, ch, &wg)
 			case "telnet":
-				go network.RunWithTelnet(&dev, cliParams.Commands.Commands, ch, &wg)
+				go driver.RunWithTelnet(dev, cliParams.Commands.Commands, ch, &wg)
 			}
 		}
 
-		wg.Add(len(ciscoIOSXRDevices))
-		for _, dev := range ciscoIOSXRDevices {
-			dev := dev // lock the host or the same host can run more than once
-			switch dev.Connector {
-			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
-			}
-		}
-
-		wg.Add(len(ciscoNXOSDevices))
-		for _, dev := range ciscoNXOSDevices {
-			dev := dev // lock the host or the same host can run more than once
-			switch dev.Connector {
-			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
-			}
-		}
-
-		wg.Add(len(ciscoSMBDevices))
-		for _, dev := range ciscoSMBDevices {
-			dev := dev // lock the host or the same host can run more than once
-			switch dev.Connector {
-			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
-			}
-		}
-
-		wg.Add(len(juniperJunosDevices))
-		for _, dev := range juniperJunosDevices {
-			dev := dev // lock the host or the same host can run more than once
-			switch dev.Connector {
-			case "ssh":
-				go network.RunWithSSH(&dev, cliParams.Commands.Commands, ch, &wg)
-			}
-		}
-
-		devTotal := len(aristaEOSDevices) +
-			len(arubaAOSCXDevices) +
-			len(ciscoAireOSDevices) +
-			len(ciscoASADevices) +
-			len(ciscoIOSDevices) +
-			len(ciscoIOSXRDevices) +
-			len(ciscoNXOSDevices) +
-			len(ciscoSMBDevices) +
-			len(juniperJunosDevices)
-		for i := 0; i < devTotal; i++ {
+		for i := 0; i < len(allDevices); i++ {
 			results = append(results, <-ch)
 		}
 
