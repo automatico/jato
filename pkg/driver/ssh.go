@@ -1,4 +1,4 @@
-package network
+package driver
 
 import (
 	"errors"
@@ -238,24 +238,23 @@ func ReadSSH(stdOut io.Reader, expect *regexp.Regexp, timeout int64) string {
 }
 
 // RunWithSSH is the entrypoint to run commands
-// against a device.
-func RunWithSSH(sd SSHDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
+func RunWithSSH(nd NetDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
 	var result data.Result
 
-	err := sd.ConnectWithSSH()
+	err := nd.ConnectWithSSH()
 	if err != nil {
-		result.Device = sd.GetName()
+		result.Device = nd.Name
 		result.Error = err
 		result.Timestamp = time.Now().Unix()
 		ch <- result
 
 	} else {
-		defer sd.DisconnectSSH()
+		defer nd.DisconnectSSH()
 
-		result = sd.SendCommandsWithSSH(commands)
+		result = nd.SendCommandsWithSSH(commands)
 
 		ch <- result
 	}
