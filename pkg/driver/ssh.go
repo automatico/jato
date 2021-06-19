@@ -33,13 +33,6 @@ type SSHConn struct {
 	StdOut  io.Reader
 }
 
-type SSHDevice interface {
-	ConnectWithSSH() error
-	SendCommandsWithSSH([]string) data.Result
-	DisconnectSSH() error
-	GetName() string
-}
-
 func SSHClientConfig(c data.Credentials, s SSHParams) (*ssh.ClientConfig, error) {
 	conf := &ssh.ClientConfig{
 		User: c.Username,

@@ -18,12 +18,6 @@ type TelnetParams struct {
 	Port int `json:"port"`
 }
 
-type TelnetDevice interface {
-	ConnectWithTelnet() error
-	SendCommandsWithTelnet([]string) data.Result
-	DisconnectTelnet() error
-}
-
 func InitTelnetParams(s *TelnetParams) {
 	if s.Port == 0 {
 		s.Port = constant.TelnetPort
