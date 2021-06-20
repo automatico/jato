@@ -19,8 +19,6 @@ import (
 
 type SSHParams struct {
 	Port                int    `json:"port"`
-	KeyBasedAuth        bool   `json:"keyBasedAuth"`
-	PasswordBasedAuth   bool   `json:"passwordBasedAuth"`
 	KnownHostsFile      string `json:"knownHostsFile"`
 	InsecureConnection  bool   `json:"insecureConnection"`
 	InsecureCiphers     bool   `json:"insecureCiphers"`
