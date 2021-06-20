@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/automatico/jato/internal/logger"
-	"github.com/automatico/jato/internal/utils"
+	"github.com/automatico/jato/internal/util"
 	"github.com/automatico/jato/pkg/constant"
 	"github.com/automatico/jato/pkg/data"
 	"golang.org/x/crypto/ssh"
@@ -19,8 +19,6 @@ import (
 
 type SSHParams struct {
 	Port                int    `json:"port"`
-	KeyBasedAuth        bool   `json:"keyBasedAuth"`
-	PasswordBasedAuth   bool   `json:"passwordBasedAuth"`
 	KnownHostsFile      string `json:"knownHostsFile"`
 	InsecureConnection  bool   `json:"insecureConnection"`
 	InsecureCiphers     bool   `json:"insecureCiphers"`
@@ -184,8 +182,8 @@ func SendCommandWithSSH(conn SSHConn, cmd string, expect *regexp.Regexp, timeout
 	}
 
 	cmdOut.Command = cmd
-	cmdOut.CommandU = utils.Underscorer(cmd)
-	cmdOut.Output = utils.CleanOutput(res)
+	cmdOut.CommandU = util.Underscorer(cmd)
+	cmdOut.Output = util.TruncateOutput(res)
 
 	return cmdOut, nil
 }

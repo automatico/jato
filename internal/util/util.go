@@ -1,4 +1,4 @@
-package utils
+package util
 
 import (
 	"html/template"
@@ -10,13 +10,16 @@ import (
 // Underscorer converts a string to an underscore string
 // replacing spaces and dashes with underscores
 func Underscorer(s string) string {
-	re := strings.NewReplacer(" ", "_", "-", "_")
-	return re.Replace(s)
+	s = strings.TrimSpace(strings.ToLower(s))
+	// s = strings.ReplaceAll(s, "|", "_")
+	s = strings.ReplaceAll(s, "-", "_")
+	s = strings.ReplaceAll(s, " ", "_")
+	return s
 }
 
-// CleanOutput removes the first and last lines from
+// TruncateOutput removes the first and last lines from
 // a string. Strings are split on '\r\n' line endings
-func CleanOutput(s string) string {
+func TruncateOutput(s string) string {
 	slice := strings.Split(s, "\r\n")
 	if len(slice) <= 1 {
 		return s
@@ -29,7 +32,7 @@ func CleanOutput(s string) string {
 func LoadTemplate(s string) *template.Template {
 	t, err := template.ParseFiles(s)
 	if err != nil {
-		logger.Fatal("error loading template: %s", err)
+		logger.Fatalf("error loading template: %s, %s", s, err)
 	}
 	return t
 }
