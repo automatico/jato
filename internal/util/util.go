@@ -11,7 +11,7 @@ import (
 // replacing spaces and dashes with underscores
 func Underscorer(s string) string {
 	s = strings.TrimSpace(strings.ToLower(s))
-	s = strings.ReplaceAll(s, "|", "_")
+	// s = strings.ReplaceAll(s, "|", "_")
 	s = strings.ReplaceAll(s, "-", "_")
 	s = strings.ReplaceAll(s, " ", "_")
 	return s
@@ -32,7 +32,7 @@ func TruncateOutput(s string) string {
 func LoadTemplate(s string) *template.Template {
 	t, err := template.ParseFiles(s)
 	if err != nil {
-		logger.Fatal("error loading template: %s", err)
+		logger.Fatalf("error loading template: %s, %s", s, err)
 	}
 	return t
 }
