@@ -7,20 +7,20 @@ Go ~v1.11+
 ## Supported Platforms
 | Vendor  | Platform | SSH | Telnet |
 |---------|----------|-----|--------|
-| Arista  | EOS      | :heavy_check_mark: | :x: |
-| Aruba   | AOS-CX   | :heavy_check_mark: | :red_circle: |
-| Cisco   | AireOS   | :heavy_check_mark: | :red_circle: |
-| Cisco   | ASA      | :heavy_check_mark: | :red_circle: |
+| Arista  | EOS      | :heavy_check_mark: | :red_circle: |
+| Aruba   | AOS-CX   | :heavy_check_mark: | :x: |
+| Cisco   | AireOS   | :heavy_check_mark: | :x: |
+| Cisco   | ASA      | :heavy_check_mark: | :x: |
 | Cisco   | IOS      | :heavy_check_mark: | :heavy_check_mark: |
-| Cisco   | IOS-XR   | :heavy_check_mark: | :red_circle: |
-| Cisco   | NXOS     | :heavy_check_mark: | :red_circle: |
-| Cisco   | SMB      | :heavy_check_mark: | :red_circle: |
-| Juniper | Junos    | :heavy_check_mark: | :x: |
+| Cisco   | IOS-XR   | :heavy_check_mark: | :x: |
+| Cisco   | NXOS     | :heavy_check_mark: | :x: |
+| Cisco   | SMB      | :heavy_check_mark: | :x: |
+| Juniper | Junos    | :heavy_check_mark: | :red_circle: |
 
 
 * :heavy_check_mark: - Supported
-* :x: - Support planned, but not yet implemented
-* :red_circle: - Not Supported
+* :red_circle: - Support planned, but not yet implemented
+* :x: - Not Supported
 
 ## Setup
 
