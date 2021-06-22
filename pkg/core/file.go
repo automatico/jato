@@ -21,8 +21,7 @@ func LoadCommands(fileName string) data.Commands {
 
 	commands := data.Commands{}
 
-	err = json.Unmarshal([]byte(file), &commands)
-	if err != nil {
+	if err := json.Unmarshal([]byte(file), &commands); err != nil {
 		logger.Error(err)
 	}
 
@@ -38,8 +37,7 @@ func LoadDevices(fileName string) driver.Devices {
 
 	devices := driver.Devices{}
 
-	err = json.Unmarshal([]byte(file), &devices)
-	if err != nil {
+	if err := json.Unmarshal([]byte(file), &devices); err != nil {
 		logger.Error(err)
 	}
 
@@ -54,8 +52,7 @@ func LoadVariables(fileName string) data.Variables {
 
 	variables := data.Variables{}
 
-	err = json.Unmarshal([]byte(file), &variables)
-	if err != nil {
+	if err := json.Unmarshal([]byte(file), &variables); err != nil {
 		logger.Error(err)
 	}
 	return variables
@@ -106,8 +103,8 @@ func WriteToJSONFile(results []data.Result) {
 	for _, result := range results {
 		CreateDir(fmt.Sprintf("%s/%s", outdir, result.Device))
 		file, _ := json.MarshalIndent(result, "", " ")
-		err := ioutil.WriteFile(fmt.Sprintf("%s/%s/%d.json", outdir, result.Device, result.Timestamp), file, 0644)
-		if err != nil {
+		fileName := fmt.Sprintf("%s/%s/%d.json", outdir, result.Device, result.Timestamp)
+		if err := ioutil.WriteFile(fileName, file, 0644); err != nil {
 			logger.Error(err)
 		}
 	}
@@ -117,17 +114,15 @@ func WriteToJSONFile(results []data.Result) {
 // already exist
 func CreateDir(s string) {
 	if _, err := os.Stat(s); os.IsNotExist(err) {
-		err := os.MkdirAll(s, 0755)
-		if err != nil {
+		if err := os.MkdirAll(s, 0755); err != nil {
 			logger.Error(err)
 		}
 	}
 }
 
 // FileStat checks if a file exists and is readable
-func FileStat(filename string) error {
-	_, err := os.Stat(filename)
-	if err != nil {
+func FileStat(fileName string) error {
+	if _, err := os.Stat(fileName); err != nil {
 		return err
 	}
 	return nil
