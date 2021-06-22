@@ -31,9 +31,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	err = t.Execute(os.Stdout, templateData)
-
-	if err != nil {
+	if err := t.Execute(os.Stdout, templateData); err != nil {
 		logger.Fatal(err)
 	}
 
@@ -116,9 +114,7 @@ func main() {
 		fmt.Print(terminal.Banner("Job Results"))
 
 		for _, r := range results {
-			err = t.Execute(os.Stdout, r)
-
-			if err != nil {
+			if err := t.Execute(os.Stdout, r); err != nil {
 				logger.Fatal(err)
 			}
 		}

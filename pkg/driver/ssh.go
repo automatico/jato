@@ -51,7 +51,6 @@ func SSHClientConfig(c data.Credentials, s SSHParams) (*ssh.ClientConfig, error)
 			return conf, fmt.Errorf("unable to parse private key: %v", err)
 		}
 		conf.Auth = append(conf.Auth, ssh.PublicKeys(signer))
-
 	}
 	// if no ssh key use password auth
 	if c.Password == "" && c.SSHKeyFile == "" {
@@ -134,14 +133,12 @@ func ConnectWithSSH(host string, port int, clientConfig *ssh.ClientConfig) (SSHC
 		return sshConn, err
 	}
 
-	err = session.RequestPty("xterm", 0, 200, modes)
-	if err != nil {
+	if err := session.RequestPty("xterm", 0, 200, modes); err != nil {
 		session.Close()
 		return sshConn, err
 	}
 
-	err = session.Shell()
-	if err != nil {
+	if err := session.Shell(); err != nil {
 		session.Close()
 		return sshConn, err
 	}
@@ -173,13 +170,12 @@ func SendCommandsWithSSH(conn SSHConn, commands []string, expect *regexp.Regexp,
 func SendCommandWithSSH(conn SSHConn, cmd string, expect *regexp.Regexp, timeout int64) (data.CommandOutput, error) {
 	cmdOut := data.CommandOutput{}
 
-	_, err := WriteSSH(conn.StdIn, cmd)
+	if _, err := WriteSSH(conn.StdIn, cmd); err != nil {
+		return cmdOut, err
+	}
 	time.Sleep(time.Millisecond * 3)
 
 	res := ReadSSH(conn.StdOut, expect, timeout)
-	if err != nil {
-		return cmdOut, err
-	}
 
 	cmdOut.Command = cmd
 	cmdOut.CommandU = util.Underscorer(cmd)
@@ -235,8 +231,7 @@ func RunWithSSH(nd NetDevice, commands []string, ch chan data.Result, wg *sync.W
 
 	var result data.Result
 
-	err := nd.ConnectWithSSH()
-	if err != nil {
+	if err := nd.ConnectWithSSH(); err != nil {
 		result.Device = nd.Name
 		result.Error = err
 		result.Timestamp = time.Now().Unix()

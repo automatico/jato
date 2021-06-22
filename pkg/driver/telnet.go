@@ -2,7 +2,6 @@ package driver
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"regexp"
 	"sync"
@@ -60,8 +59,7 @@ func SendCommandWithTelnet(conn *telnet.Conn, cmd string, expect *regexp.Regexp,
 }
 
 func WriteTelnet(w io.Writer, s string) error {
-	_, err := w.Write([]byte(s + "\n"))
-	if err != nil {
+	if _, err := w.Write([]byte(s + "\n")); err != nil {
 		return err
 	}
 	return nil
@@ -97,14 +95,18 @@ func ReadTelnet(r io.Reader, expect *regexp.Regexp, timeout int64) (string, erro
 }
 
 func RunWithTelnet(nd NetDevice, commands []string, ch chan data.Result, wg *sync.WaitGroup) {
-	err := nd.ConnectWithTelnet()
-	if err != nil {
-		fmt.Println(err)
+	var result data.Result
+	if err := nd.ConnectWithTelnet(); err != nil {
+		result.Device = nd.Name
+		result.Error = err
+		result.Timestamp = time.Now().Unix()
+		ch <- result
+	} else {
+		defer nd.DisconnectTelnet()
+		defer wg.Done()
+
+		result = nd.SendCommandsWithTelnet(commands)
+		ch <- result
 	}
-	defer nd.DisconnectTelnet()
-	defer wg.Done()
 
-	result := nd.SendCommandsWithTelnet(commands)
-
-	ch <- result
 }
