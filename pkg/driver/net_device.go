@@ -15,8 +15,8 @@ type Prompt struct {
 	Config    *regexp.Regexp
 }
 
-// Devices holds a collection of Device structs
-type Devices struct {
+// Devices holds a collection of NetDevice structs
+type NetDevices struct {
 	Devices []NetDevice `json:"devices"`
 }
 

@@ -29,13 +29,13 @@ func LoadCommands(fileName string) data.Commands {
 }
 
 // Load a list of devices from a JSON file
-func LoadDevices(fileName string) driver.Devices {
+func LoadDevices(fileName string) driver.NetDevices {
 	file, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		logger.Error(err)
 	}
 
-	devices := driver.Devices{}
+	devices := driver.NetDevices{}
 
 	if err := json.Unmarshal([]byte(file), &devices); err != nil {
 		logger.Error(err)

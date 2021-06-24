@@ -17,7 +17,7 @@ const version = "2021.06.13"
 // Params contain the result of CLI input
 type Params struct {
 	Credentials data.Credentials
-	Devices     driver.Devices
+	Devices     driver.NetDevices
 	Commands    data.Commands
 	NoOp        bool
 }
