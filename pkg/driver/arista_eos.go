@@ -9,9 +9,9 @@ import (
 func NewAristaEOSDevice(d NetDevice) NetDevice {
 
 	// Prompts
-	d.UserPromptRE = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,63}>$`)
-	d.SuperUserPromptRE = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,63}#$`)
-	d.ConfigPromtRE = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,63}\(config[a-z0-9-]{0,63}\)#$`)
+	d.Prompt.User = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,63}>$`)
+	d.Prompt.SuperUser = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,63}#$`)
+	d.Prompt.Config = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,63}\(config[a-z0-9-]{0,63}\)#$`)
 
 	// SSH Params
 	InitSSHParams(&d.SSHParams)
@@ -34,7 +34,7 @@ func AristaEOSConnectWithSSH(d *NetDevice) error {
 		return err
 	}
 
-	ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
+	ReadSSH(sshConn.StdOut, d.Prompt.SuperUser, 2)
 
 	d.SSHConn = sshConn
 

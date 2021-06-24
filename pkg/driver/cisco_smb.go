@@ -8,9 +8,9 @@ import (
 // a CiscoSMBDevice.
 func NewCiscoSMBDevice(d NetDevice) NetDevice {
 	// Prompts
-	d.UserPromptRE = regexp.MustCompile(`(?im)[a-z0-9.\\-_@()/:]{1,63}>$`)
-	d.SuperUserPromptRE = regexp.MustCompile(`(?im)[a-z0-9.\\-_@()/:]{1,63}#$`)
-	d.ConfigPromtRE = regexp.MustCompile(`(?im)[a-z0-9.\-_@/:]{1,63}\([a-z0-9.\-@/:\+]{0,32}\)#$`)
+	d.Prompt.User = regexp.MustCompile(`(?im)[a-z0-9.\\-_@()/:]{1,63}>$`)
+	d.Prompt.SuperUser = regexp.MustCompile(`(?im)[a-z0-9.\\-_@()/:]{1,63}#$`)
+	d.Prompt.Config = regexp.MustCompile(`(?im)[a-z0-9.\-_@/:]{1,63}\([a-z0-9.\-@/:\+]{0,32}\)#$`)
 
 	// SSH Params
 	InitSSHParams(&d.SSHParams)
@@ -33,7 +33,7 @@ func CiscoSMBConnectWithSSH(d *NetDevice) error {
 		return err
 	}
 
-	ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 5)
+	ReadSSH(sshConn.StdOut, d.Prompt.SuperUser, 5)
 
 	d.SSHConn = sshConn
 

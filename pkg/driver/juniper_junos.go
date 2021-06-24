@@ -8,9 +8,9 @@ import (
 // a JuniperJunosDevice.
 func NewJuniperJunosDevice(d NetDevice) NetDevice {
 	// Prompts
-	d.UserPromptRE = regexp.MustCompile(`(?im)[a-z0-9.\-_@()/:]{1,63}>\s$`)
-	d.SuperUserPromptRE = regexp.MustCompile(`(?im)[a-z0-9.\-_@()/:]{1,63}>\s$`)
-	d.ConfigPromtRE = regexp.MustCompile(`(?im)(\[edit\]\n){0,1}[a-z0-9.\-_@()/:]{1,63}#\s?$`)
+	d.Prompt.User = regexp.MustCompile(`(?im)[a-z0-9.\-_@()/:]{1,63}>\s$`)
+	d.Prompt.SuperUser = regexp.MustCompile(`(?im)[a-z0-9.\-_@()/:]{1,63}>\s$`)
+	d.Prompt.Config = regexp.MustCompile(`(?im)(\[edit\]\n){0,1}[a-z0-9.\-_@()/:]{1,63}#\s?$`)
 
 	// SSH Params
 	InitSSHParams(&d.SSHParams)
@@ -33,7 +33,7 @@ func JuniperJunosConnectWithSSH(d *NetDevice) error {
 		return err
 	}
 
-	ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
+	ReadSSH(sshConn.StdOut, d.Prompt.SuperUser, 2)
 
 	d.SSHConn = sshConn
 

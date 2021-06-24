@@ -9,9 +9,9 @@ import (
 func NewArubaAOSCXDevice(d NetDevice) NetDevice {
 
 	// Prompts
-	d.UserPromptRE = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,31}>\s$`)
-	d.SuperUserPromptRE = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,31}#\s$`)
-	d.ConfigPromtRE = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,31}\(config[a-z0-9-]{0,63}\)#\s$`)
+	d.Prompt.User = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,31}>\s$`)
+	d.Prompt.SuperUser = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,31}#\s$`)
+	d.Prompt.Config = regexp.MustCompile(`(?im)[a-z0-9\.-]{1,31}\(config[a-z0-9-]{0,63}\)#\s$`)
 
 	// SSH Params
 	InitSSHParams(&d.SSHParams)
@@ -34,7 +34,7 @@ func ArubaAOSCXConnectWithSSH(d *NetDevice) error {
 		return err
 	}
 
-	ReadSSH(sshConn.StdOut, d.SuperUserPromptRE, 2)
+	ReadSSH(sshConn.StdOut, d.Prompt.SuperUser, 2)
 
 	d.SSHConn = sshConn
 

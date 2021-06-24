@@ -9,24 +9,28 @@ import (
 	"github.com/reiver/go-telnet"
 )
 
+type Prompt struct {
+	User      *regexp.Regexp
+	SuperUser *regexp.Regexp
+	Config    *regexp.Regexp
+}
+
 // Devices holds a collection of Device structs
 type Devices struct {
 	Devices []NetDevice `json:"devices"`
 }
 
 type NetDevice struct {
-	IP                string `json:"ip"`
-	Name              string `json:"name"`
-	Vendor            string `json:"vendor"`
-	Platform          string `json:"platform"`
-	Connector         string `json:"connector"`
-	SSHParams         `json:"sshParams"`
-	TelnetParams      `json:"telnetParams"`
-	data.Variables    `json:"variables"`
-	Timeout           int64
-	UserPromptRE      *regexp.Regexp
-	SuperUserPromptRE *regexp.Regexp
-	ConfigPromtRE     *regexp.Regexp
+	IP             string `json:"ip"`
+	Name           string `json:"name"`
+	Vendor         string `json:"vendor"`
+	Platform       string `json:"platform"`
+	Connector      string `json:"connector"`
+	SSHParams      `json:"sshParams"`
+	TelnetParams   `json:"telnetParams"`
+	data.Variables `json:"variables"`
+	Timeout        int64
+	Prompt         Prompt
 	SSHConn
 	TelnetConn *telnet.Conn
 	data.Credentials
@@ -99,7 +103,7 @@ func (d NetDevice) SendCommandWithSSH(command string) data.Result {
 	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := SendCommandWithSSH(d.SSHConn, command, d.SuperUserPromptRE, d.Timeout)
+	cmdOut, err := SendCommandWithSSH(d.SSHConn, command, d.Prompt.SuperUser, d.Timeout)
 	if err != nil {
 		result.OK = false
 		result.Error = err
@@ -118,7 +122,7 @@ func (d NetDevice) SendCommandsWithSSH(commands []string) data.Result {
 	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := SendCommandsWithSSH(d.SSHConn, commands, d.SuperUserPromptRE, d.Timeout)
+	cmdOut, err := SendCommandsWithSSH(d.SSHConn, commands, d.Prompt.SuperUser, d.Timeout)
 	if err != nil {
 		result.OK = false
 		result.Error = err
@@ -157,7 +161,7 @@ func (d NetDevice) SendCommandWithTelnet(cmd string) data.Result {
 	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := SendCommandWithTelnet(d.TelnetConn, cmd, d.SuperUserPromptRE, d.Timeout)
+	cmdOut, err := SendCommandWithTelnet(d.TelnetConn, cmd, d.Prompt.SuperUser, d.Timeout)
 	if err != nil {
 		result.OK = false
 		result.Error = err
@@ -176,7 +180,7 @@ func (d NetDevice) SendCommandsWithTelnet(commands []string) data.Result {
 	result.Device = d.Name
 	result.Timestamp = time.Now().Unix()
 
-	cmdOut, err := SendCommandsWithTelnet(d.TelnetConn, commands, d.SuperUserPromptRE, d.Timeout)
+	cmdOut, err := SendCommandsWithTelnet(d.TelnetConn, commands, d.Prompt.SuperUser, d.Timeout)
 	if err != nil {
 		result.OK = false
 		result.Error = err
